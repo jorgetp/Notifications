@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/group_clear">
+        <item
+            android:id="@+id/menu_clear_all_except_today"
+            android:icon="@drawable/outline_delete_24"
+            android:title="@string/menu_clear_all_except_today" />
+    </group>
+    <group android:id="@+id/group_apps">
+        <item
+            android:id="@+id/menu_silenced_apps"
+            android:icon="@drawable/outline_notifications_off_24"
+            android:title="@string/silenced_apps" />
+        <item
+            android:id="@+id/menu_important_senders"
+            android:icon="@drawable/outline_favorite_24"
+            android:title="@string/important_senders" />
+    </group>
+    <!--<group android:id="@+id/group_general">
+        <item
+            android:id="@+id/menu_settings"
+            android:icon="@drawable/outline_settings_24"
+            android:title="@string/settings" />
+    </group>-->
+</menu>

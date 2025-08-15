@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/group_copy">
+        <item
+            android:id="@+id/copy_title"
+            android:title="@string/copy_title" />
+        <item
+            android:id="@+id/copy_text"
+            android:title="@string/copy_text" />
+    </group>
+    <group android:id="@+id/group_apps">
+        <item
+            android:id="@+id/go_to_app"
+            android:title="@string/go_to_app" />
+        <item
+            android:id="@+id/silence_app"
+            android:title="@string/silence_app" />
+        <item
+            android:id="@+id/set_as_important"
+            android:title="@string/set_as_important" />
+    </group>
+    <group android:id="@+id/group_general">
+        <item
+            android:id="@+id/pop_out"
+            android:title="@string/pop_out" />
+    </group>
+</menu>

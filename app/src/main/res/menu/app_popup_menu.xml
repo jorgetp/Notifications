@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/silenced_always"
+        android:title="@string/silenced_always" />
+    <item
+        android:id="@+id/silenced_non_business"
+        android:title="@string/silenced_non_business" />
+    <item
+        android:id="@+id/not_silenced"
+        android:title="@string/not_silenced" />
+</menu>
