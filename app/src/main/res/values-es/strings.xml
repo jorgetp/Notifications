@@ -9,18 +9,18 @@
     <string name="notifications_deleted">Notificaciones eliminadas</string>
     <string name="silenced_apps">Apps silenciadas</string>
     <string name="silence_app">Silenciar app</string>
-    <string name="silenced_always">Siempre silenciado</string>
-    <string name="silenced_non_business">Silenciado fuera de horario laboral</string>
-    <string name="not_silenced">No silenciado</string>
+    <string name="silenced_always">Silenciada siempre</string>
+    <string name="silenced_non_business">Silenciada fuera de horario laboral</string>
+    <string name="not_silenced">No silenciada</string>
     <string name="set_as_important">Marcar como importante</string>
     <string name="tap_to_unset_as_important">Toca para desmarcar como importante</string>
     <string name="unset_as_important">Desmarcar como importante</string>
     <string name="important_senders">Remitentes importantes</string>
-    <string name="all">" Todo "</string>
+    <string name="all">Todo</string>
     <string name="in_dnd_mode">En modo No Molestar</string>
-    <string name="pop_out">Desplegar</string>
+    <string name="pop_out">Resaltar</string>
     <string name="unset_as_important_confirmation">¿Estás seguro de que deseas desmarcar al remitente como importante?</string>
     <string name="settings">Configuración</string>
-    <string name="copied_title">Título copiado</string>
-    <string name="copied_text">Texto copiado</string>
+    <string name="copied_title">Remitente copiado</string>
+    <string name="copied_text">Mensaje copiado</string>
 </resources>
