@@ -23,5 +23,5 @@
     <string name="settings">Configuración</string>
     <string name="copied_title">Remitente copiado</string>
     <string name="copied_text">Mensaje copiado</string>
-    <string name="silenced_notification">Notificacion silenciada</string>
+    <string name="silenced_notification">Notificación silenciada</string>
 </resources>
