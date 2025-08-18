@@ -5,9 +5,11 @@ import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.IsInDndMode;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.NOTIFICATIONS_PREFS;
+import static com.jorgetp.notifications.MainActivity.NOTIFICATION_CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Bundle;
@@ -25,6 +27,9 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class NotificationsService extends NotificationListenerService {
+    public static boolean NEW_NOTIFICATIONS;
+
+    private NotificationManager mNotificationManager;
 
     /*
      * @Override
@@ -44,13 +49,16 @@ public class NotificationsService extends NotificationListenerService {
     }
 
     public static boolean IsStandardNotification(StatusBarNotification sbn) {
-        // 1. Must be user-clearable
+        // 1. Must not be a notification from this app
+        if (sbn.getPackageName().equals("com.jorgetp.notifications"))
+            return false;
+        // 2. Must be user-clearable
         if (!sbn.isClearable())
             return false;
-        // 2. Must NOT be an ongoing event
+        // 3. Must NOT be an ongoing event
         if (sbn.isOngoing())
             return false;
-        // 3. Must NOT be a system/background category
+        // 4. Must NOT be a system/background category
         String category = sbn.getNotification().category;
         if (category != null) {
             switch (category) {
@@ -63,25 +71,13 @@ public class NotificationsService extends NotificationListenerService {
                     return false;
             }
         }
-        /*
-         * // 4. Must NOT be a system notification
-         * if (sbn.getUid() < 10000) return false; // System UIDs are below 10000
-         * // 5. Must NOT be a group summary notification
-         * Notification notification = sbn.getNotification();
-         * if (notification == null || (notification.flags &
-         * Notification.FLAG_GROUP_SUMMARY) != 0) {
-         * return false;
-         * }
-         * // 6. Must NOT be a heads-up notification
-         * if ((notification.flags & Notification.FLAG_HIGH_PRIORITY) != 0) {
-         * return false;
-         * }
-         * // 7. Must NOT be a silent notification
-         * if ((notification.flags & Notification.FLAG_NO_CLEAR) != 0) {
-         * return false;
-         * }
-         */
         return true;
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
     private boolean isImportantNotification(StatusBarNotification sbn) {
@@ -126,17 +122,31 @@ public class NotificationsService extends NotificationListenerService {
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (isSilentNotification(sbn)) {
             if (IsStandardNotification(sbn)) {
-                saveNotification(sbn);
+
+                // show a notification that a notification has been silenced
+                mNotificationManager.notify(sbn.getPackageName().hashCode() + sbn.getId(),
+                        new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+                                .setSmallIcon(sbn.getNotification().getSmallIcon())
+                                //.setSmallIcon(R.mipmap.ic_launcher)
+                                .setLargeIcon(sbn.getNotification().getLargeIcon())
+                                //.setLargeIcon(sbn.getNotification().getSmallIcon())
+                                .setContentTitle(getString(R.string.silenced_notification))
+                                .setContentText(sbn.getNotification()
+                                        .extras.getString(Notification.EXTRA_TITLE))
+                                .setAutoCancel(true).build());
+
                 cancelNotification(sbn.getKey());
             }
         } else {
             Executors.newSingleThreadExecutor().execute(() -> {
-                if (IsStandardNotification(sbn))
+                if (IsStandardNotification(sbn)) {
                     saveNotification(sbn);
+                }
             });
         }
     }
 
+    // save a notification to shared preferences
     private void saveNotification(StatusBarNotification sbn) {
         Notification notification = sbn.getNotification();
         if (notification == null)
@@ -201,6 +211,7 @@ public class NotificationsService extends NotificationListenerService {
             }
         });
 
+        NEW_NOTIFICATIONS = true;
         Log.d("NotificationsService", "Notification saved: " + json);
     }
 }

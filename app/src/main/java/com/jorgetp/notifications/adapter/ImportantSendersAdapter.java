@@ -15,7 +15,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -99,9 +98,6 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
                     prefs.edit().remove(sender.packageName + "/" + sender.sender).apply();
                     senders.remove(i);
                     notifyItemRemoved(i);
-
-                    Toast.makeText(context, context.getString(R.string.unset_as_important),
-                            Toast.LENGTH_SHORT).show();
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .create()

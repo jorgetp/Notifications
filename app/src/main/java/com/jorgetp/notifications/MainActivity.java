@@ -65,8 +65,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     private List<JSONObject> allNotifications;
     private List<Map.Entry<String, Integer>> packageCounts;
 
-    private SharedPreferences.OnSharedPreferenceChangeListener preferenceListener;
-
     public static Date ToDate(long timestamp) {
         try {
             return new Date(timestamp);
@@ -151,6 +149,15 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
 
         FloatingActionButton fabRefresh = findViewById(R.id.fabRefresh);
         fabRefresh.setOnClickListener(view -> refreshContent("all"));
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (NotificationsService.NEW_NOTIFICATIONS) {
+            refreshContent("all");
+            NotificationsService.NEW_NOTIFICATIONS = false;
+        }
     }
 
     @SuppressLint("RestrictedApi")
