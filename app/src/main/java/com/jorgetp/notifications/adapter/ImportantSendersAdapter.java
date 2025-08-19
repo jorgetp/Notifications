@@ -75,7 +75,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
 
             // load sender icon from internal storage if it exists
             try (FileInputStream fis = context
-                    .openFileInput("notification_icon_" + sender.notificationId + ".png")) {
+                    .openFileInput("notification_icon_" + sender.uuid + ".png")) {
                 Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
 
                 holder.ivIcon.setImageBitmap(iconBitmap);
@@ -118,12 +118,12 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     public static class ImportantSender {
         private final String packageName;
         private final String sender;
-        private final String notificationId;
+        private final String uuid;
 
-        public ImportantSender(String packageName, String sender, String notificationId) {
+        public ImportantSender(String packageName, String sender, String uuid) {
             this.packageName = packageName;
             this.sender = sender;
-            this.notificationId = notificationId;
+            this.uuid = uuid;
         }
     }
 }

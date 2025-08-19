@@ -53,7 +53,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements FilterAdapter.OnAppFilterClickListener {
-    public static final String NOTIFICATION_CHANNEL_ID = "Notifications";
+    public static final String NOTIFICATION_CHANNEL_ID = "com.jorgetp.notifications";
     public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
@@ -156,9 +156,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     @Override
     protected void onResume() {
         super.onResume();
-
-        //getSharedPreferences(NEW_SILENCED_NOTIFICATIONS, Context.MODE_PRIVATE).edit().clear().apply();
-
         if (NotificationService.NEW_NOTIFICATIONS) {
             refreshContent("all");
             NotificationService.NEW_NOTIFICATIONS = false;
@@ -180,7 +177,9 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        SharedPreferences notificationPrefs = getApplicationContext().getSharedPreferences(NOTIFICATIONS_PREFS,
+        SharedPreferences notificationPrefs = getSharedPreferences(NOTIFICATIONS_PREFS,
+                Context.MODE_PRIVATE);
+        SharedPreferences importantSendersPrefs = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
                 Context.MODE_PRIVATE);
 
         int itemId = item.getItemId();
@@ -188,13 +187,13 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_clear_all_except_today_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                        for (String key : notificationPrefs.getAll().keySet()) {
+                        for (Map.Entry<String, ?> entry : notificationPrefs.getAll().entrySet()) {
                             try {
-                                JSONObject notification = new JSONObject(notificationPrefs.getString(key, null));
+                                JSONObject notification = new JSONObject(entry.getValue().toString());
                                 long postTime = notification.optLong("postTime");
                                 Date date = ToDate(postTime);
                                 if (!IsToday(date)) {
-                                    notificationPrefs.edit().remove(key).apply();
+                                    notificationPrefs.edit().remove(entry.getKey()).apply();
                                 }
                             } catch (JSONException e) {
                                 Log.e("MainActivity", "JSON error", e);
@@ -202,29 +201,31 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                         }
                         refreshContent("all");
 
-                        // asynchronously delete unused notification icons from internal storage
+                        // asynchronously delete all icons whose uuid is not linked to
+                        // (a) an important sender and (b) a still-stored notification
                         Executors.newSingleThreadExecutor().execute(() -> {
-                            Map<String, ?> importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
-                                    Context.MODE_PRIVATE).getAll();
-                            HashSet<String> notificationsUUIDs = new HashSet<>(10);
-                            for (String key : notificationPrefs.getAll().keySet()) {
+                            // get active UUIDs
+                            HashSet<String> activeUUIDs = new HashSet<>(10);
+                            for (Object n : notificationPrefs.getAll().values()) {
                                 try {
-                                    JSONObject notification = new JSONObject(notificationPrefs.getString(key, null));
-                                    notificationsUUIDs.add(notification.optString("uuid"));
+                                    JSONObject notification = new JSONObject(n.toString());
+                                    activeUUIDs.add(notification.optString("uuid"));
                                 } catch (JSONException e) {
                                     Log.e("MainActivity", "JSON error", e);
                                 }
                             }
 
-                            // delete all icon files whose uuid is not linked to
-                            // (a) an important sender and (b) a still-stored notification
+                            for (Object uuid : importantSendersPrefs.getAll().values())
+                                activeUUIDs.add(uuid.toString());
+
+                            // delete files
                             for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
                                 String fileName = file.getName();
                                 if (!fileName.startsWith("notification_icon_"))
                                     continue;
 
                                 String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
-                                if (!importantSenders.containsKey(uuid) && !notificationsUUIDs.contains(uuid)) {
+                                if (!activeUUIDs.contains(uuid)) {
                                     if (file.delete())
                                         Log.d("MainActivity", "Icon deleted: " + fileName);
                                 }
@@ -314,19 +315,18 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     }
 
     private Pair<List<JSONObject>, List<Map.Entry<String, Integer>>> loadAllNotifications() {
-        SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS,
-                Context.MODE_PRIVATE);
+        SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
 
         List<JSONObject> notifications = new ArrayList<>(10);
         Map<String, Integer> counts = new HashMap<>();
         int totalCount = 0;
-        for (String key : notificationsPrefs.getAll().keySet()) {
-            try {
-                JSONObject notification = new JSONObject(notificationsPrefs.getString(key, "{}"));
-                String packageName = notification.optString("package");
 
+        for (Object n : notificationsPrefs.getAll().values()) {
+            try {
+                JSONObject notification = new JSONObject(n.toString());
                 notifications.add(notification);
 
+                String packageName = notification.optString("package");
                 counts.put(packageName, counts.getOrDefault(packageName, 0) + 1);
                 totalCount++;
 
@@ -350,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         // create sorted list of packages and their counts
         List<Map.Entry<String, Integer>> packageCounts = new ArrayList<>(counts.entrySet());
         Collections.sort(packageCounts, (o1, o2) -> o2.getValue().compareTo(o1.getValue()));
-        // Add "All" filter at the beginning
+        // Add "all" filter at the beginning
         packageCounts.add(0, new AbstractMap.SimpleEntry<>("all", totalCount));
 
         return new Pair<>(notifications, packageCounts);

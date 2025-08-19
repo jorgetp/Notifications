@@ -101,7 +101,7 @@ public class NotificationService extends NotificationListenerService {
         Bitmap[] iconBitmap = new Bitmap[1];
         if (iconObj != null) {
             try {
-                Drawable drawable = iconObj.loadDrawable(getApplicationContext());
+                Drawable drawable = iconObj.loadDrawable(this);
                 if (drawable instanceof BitmapDrawable) {
                     iconBitmap[0] = ((BitmapDrawable) drawable).getBitmap();
                 }
