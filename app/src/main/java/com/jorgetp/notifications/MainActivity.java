@@ -46,8 +46,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements FilterAdapter.OnAppFilterClickListener {
@@ -181,9 +183,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         SharedPreferences notificationPrefs = getApplicationContext().getSharedPreferences(NOTIFICATIONS_PREFS,
                 Context.MODE_PRIVATE);
-        SharedPreferences importantSendersPrefs = getApplicationContext().getSharedPreferences(IMPORTANT_SENDERS_PREFS,
-                Context.MODE_PRIVATE);
-        Map<String, ?> importantSenders = importantSendersPrefs.getAll();
 
         int itemId = item.getItemId();
         if (itemId == R.id.menu_clear_all_except_today) {
@@ -197,30 +196,41 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                                 Date date = ToDate(postTime);
                                 if (!IsToday(date)) {
                                     notificationPrefs.edit().remove(key).apply();
-                                    // asynchronously delete notification icon from iternal storage
-                                    Executors.newSingleThreadExecutor().execute(() -> {
-                                        // delete only if notification UUID is not linked to an important sender
-                                        String uuid = notification.optString("uuid");
-                                        if (!importantSenders.containsValue(uuid)) {
-                                            String iconFileName = "notification_icon_" + notification.optString("uuid")
-                                                    + ".png";
-                                            File iconFile = new File(getFilesDir(), iconFileName);
-                                            if (iconFile.exists()) {
-                                                try {
-                                                    iconFile.delete();
-                                                } catch (Exception e) {
-                                                    Log.e("MainActivity",
-                                                            "Failed to delete: " + iconFile.getAbsolutePath(), e);
-                                                }
-                                            }
-                                        }
-                                    });
                                 }
                             } catch (JSONException e) {
                                 Log.e("MainActivity", "JSON error", e);
                             }
                         }
                         refreshContent("all");
+
+                        // asynchronously delete unused notification icons from internal storage
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            Map<String, ?> importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
+                                    Context.MODE_PRIVATE).getAll();
+                            HashSet<String> notificationsUUIDs = new HashSet<>(10);
+                            for (String key : notificationPrefs.getAll().keySet()) {
+                                try {
+                                    JSONObject notification = new JSONObject(notificationPrefs.getString(key, null));
+                                    notificationsUUIDs.add(notification.optString("uuid"));
+                                } catch (JSONException e) {
+                                    Log.e("MainActivity", "JSON error", e);
+                                }
+                            }
+
+                            // delete all icon files whose uuid is not linked to
+                            // (a) an important sender and (b) a still-stored notification
+                            for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
+                                String fileName = file.getName();
+                                if (!fileName.startsWith("notification_icon_"))
+                                    continue;
+
+                                String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
+                                if (!importantSenders.containsKey(uuid) && !notificationsUUIDs.contains(uuid)) {
+                                    if (file.delete())
+                                        Log.d("MainActivity", "Icon deleted: " + fileName);
+                                }
+                            }
+                        });
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .create()

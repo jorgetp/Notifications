@@ -21,6 +21,8 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
@@ -35,18 +37,14 @@ import java.util.Calendar;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 public class NotificationsService extends NotificationListenerService {
     public static boolean NEW_NOTIFICATIONS;
-    private NotificationManager mNotificationManager;
+    private NotificationManager notificationManager;
 
-    /*
-     * @Override
-     * public int onStartCommand(Intent intent, int flags, int startId) {
-     * return START_REDELIVER_INTENT;
-     * }
-     */
+    private HandlerThread handlerThread;
+    private Handler handler;
+    private Runnable repeatingTask;
 
     private static String CreateKey(JSONObject json) {
         String packageName = json.optString("package", "");
@@ -54,13 +52,53 @@ public class NotificationsService extends NotificationListenerService {
         String textRaw = json.optString("text", "");
         String text = textRaw.substring(0, Math.min(300, textRaw.length()));
 
-        long postTimeBlock = json.optLong("postTime") / 60000;
+        long postTimeBlock = json.optLong("postTime") / 30000;
         return packageName + "|" + title + "|" + text + "|" + postTimeBlock;
     }
 
-    public static boolean IsStandardNotification(StatusBarNotification sbn) {
-        // 1. Must not be a notification from this app
-        if (sbn.getPackageName().equals("com.jorgetp.notifications"))
+    @Override
+    public void onListenerConnected() {
+        super.onListenerConnected();
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        // Start a background thread
+        handlerThread = new HandlerThread("NotificationsBackgroundThread");
+        handlerThread.start();
+
+        // Create a handler attached to the background thread
+        handler = new Handler(handlerThread.getLooper());
+
+        // Define the task
+        repeatingTask = new Runnable() {
+            @Override
+            public void run() {
+                // Your background task
+                postNewSilencedNotifications();
+                // Schedule the next run after 10 minutes (600,000 ms)
+                handler.postDelayed(this, 10 * 60 * 1000L);
+            }
+        };
+
+        // Start the repeating task
+        handler.post(repeatingTask);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Clean up
+        if (handler != null && repeatingTask != null) {
+            handler.removeCallbacks(repeatingTask);
+        }
+        if (handlerThread != null) {
+            handlerThread.quitSafely();
+        }
+        Log.d("NotificationsService", "Service destroyed, task stopped.");
+    }
+
+    public boolean isStandardNotification(StatusBarNotification sbn) {
+        // 1. Must not be a self-notification
+        if (sbn.getPackageName().equals(getPackageName()))
             return false;
         // 2. Must be user-clearable
         if (!sbn.isClearable())
@@ -82,16 +120,6 @@ public class NotificationsService extends NotificationListenerService {
             }
         }
         return true;
-    }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
-        // run postNewSilencedNotifications() in the background every 10 minutes
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this::postNewSilencedNotifications,
-                0, 10, TimeUnit.MINUTES);
     }
 
     private boolean isImportantNotification(StatusBarNotification sbn) {
@@ -135,16 +163,14 @@ public class NotificationsService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (isSilentNotification(sbn)) {
-            if (IsStandardNotification(sbn)) {
-
-                saveNotification(sbn, true);
-
+            if (isStandardNotification(sbn)) {
+                processNotification(sbn, true);
                 cancelNotification(sbn.getKey());
             }
         } else {
             Executors.newSingleThreadExecutor().execute(() -> {
-                if (IsStandardNotification(sbn)) {
-                    saveNotification(sbn, false);
+                if (isStandardNotification(sbn)) {
+                    processNotification(sbn, false);
                 }
             });
         }
@@ -158,15 +184,19 @@ public class NotificationsService extends NotificationListenerService {
                 String packageName = notification.optString("package");
                 String title = notification.optString("title");
                 String notificationId = notification.optString("uuid");
+                long postTime = notification.optLong("postTime");
 
                 ApplicationInfo appInfo = getPackageManager().getApplicationInfo(packageName, 0);
                 CharSequence appName = getPackageManager().getApplicationLabel(appInfo);
 
                 Notification.Builder builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
+                        //.setSmallIcon(R.mipmap.ic_launcher)
+                        .setSmallIcon(R.drawable.outline_notifications_off_24)
                         .setContentTitle(getString(R.string.silenced_notification))
                         .setContentText(String.format("%s: %s", appName, title))
-                        .setAutoCancel(true);
+                        .setAutoCancel(true)
+                        .setShowWhen(true)
+                        .setWhen(postTime);
 
                 try (FileInputStream fis = openFileInput("notification_icon_" + notificationId + ".png")) {
                     Bitmap bitmap = BitmapFactory.decodeStream(fis);
@@ -175,7 +205,7 @@ public class NotificationsService extends NotificationListenerService {
                     Log.e("NotificationsService", "Icon not found", e);
                 }
 
-                mNotificationManager.notify(new Random().nextInt(Integer.MAX_VALUE), builder.build());
+                notificationManager.notify(new Random().nextInt(Integer.MAX_VALUE), builder.build());
 
             } catch (JSONException e) {
                 Log.e("NotificationsService", "JSON error", e);
@@ -188,7 +218,7 @@ public class NotificationsService extends NotificationListenerService {
     }
 
     // save a notification to shared preferences
-    private void saveNotification(StatusBarNotification sbn, boolean silenced) {
+    private void processNotification(StatusBarNotification sbn, boolean silenced) {
         Notification notification = sbn.getNotification();
         if (notification == null)
             return;
@@ -223,11 +253,13 @@ public class NotificationsService extends NotificationListenerService {
             return;
         }
 
+        // save notification
         getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE)
                 .edit()
                 .putString(notificationKey, json.toString())
                 .apply();
 
+        // save notification to the new_silenced_notifications list
         if (silenced)
             getSharedPreferences(NEW_SILENCED_NOTIFICATIONS, Context.MODE_PRIVATE)
                     .edit().putString(notificationKey, json.toString()).apply();
