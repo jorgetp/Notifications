@@ -160,9 +160,9 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
 
         //getSharedPreferences(NEW_SILENCED_NOTIFICATIONS, Context.MODE_PRIVATE).edit().clear().apply();
 
-        if (NotificationsService.NEW_NOTIFICATIONS) {
+        if (NotificationService.NEW_NOTIFICATIONS) {
             refreshContent("all");
-            NotificationsService.NEW_NOTIFICATIONS = false;
+            NotificationService.NEW_NOTIFICATIONS = false;
         }
     }
 

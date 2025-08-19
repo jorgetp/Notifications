@@ -74,19 +74,17 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             holder.ivIconSecondary.setVisibility(View.GONE);
 
             // load sender icon from internal storage if it exists
-            //Executors.newSingleThreadExecutor().execute(() -> {
             try (FileInputStream fis = context
                     .openFileInput("notification_icon_" + sender.notificationId + ".png")) {
                 Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-                //((Activity) context).runOnUiThread(() -> {
+
                 holder.ivIcon.setImageBitmap(iconBitmap);
                 holder.ivIconSecondary.setVisibility(View.VISIBLE);
                 holder.ivIconSecondary.setImageDrawable(appIcon);
-                //});
+
             } catch (Exception e) {
                 Log.e("NotificationsAdapter", "Icon not found", e);
             }
-            //});
 
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("ImportantSendersAdapter", "App not found", e);

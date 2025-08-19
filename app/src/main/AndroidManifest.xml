@@ -29,7 +29,7 @@
         </activity>
 
         <service
-            android:name=".NotificationsService"
+            android:name=".NotificationService"
             android:exported="true"
             android:label="@string/app_name"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">

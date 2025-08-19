@@ -122,20 +122,18 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             holder.ivIcon.setImageDrawable(appIcon);
             holder.ivIconSecondary.setVisibility(View.GONE);
 
-            // load icon asynchronously from internal storage if it exists
-            //Executors.newSingleThreadExecutor().execute(() -> {
+            // load icon from internal storage if it exists
             try (FileInputStream fis = context
                     .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
                 Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-                //((Activity) context).runOnUiThread(() -> {
+
                 holder.ivIcon.setImageBitmap(iconBitmap);
                 holder.ivIconSecondary.setVisibility(View.VISIBLE);
                 holder.ivIconSecondary.setImageDrawable(appIcon);
-                //});
+
             } catch (Exception e) {
                 Log.e("NotificationsAdapter", "Icon not found", e);
             }
-            //});
 
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("NotificationsAdapter", "App not found", e);
