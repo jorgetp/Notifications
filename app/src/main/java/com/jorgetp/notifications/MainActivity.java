@@ -52,7 +52,7 @@ import java.util.Objects;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements FilterAdapter.OnAppFilterClickListener {
-    public static final String NOTIFICATION_CHANNEL_ID = "com.jorgetp.notifications";
+    public static final String CHANNEL_ID = "com.jorgetp.notifications";
     public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
@@ -126,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             NotificationManager notificationManager = (NotificationManager) getSystemService(
                     Context.NOTIFICATION_SERVICE);
             NotificationChannel channel = new NotificationChannel(
-                    NOTIFICATION_CHANNEL_ID,
+                    CHANNEL_ID,
                     getString(R.string.app_name),
                     NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(channel);
@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     @Override
     protected void onResume() {
         super.onResume();
-        if (REFRESH_CONTENT_ON_RESUME || getIntent().hasExtra("notification_tapped")) {
+        if (REFRESH_CONTENT_ON_RESUME) {
             refreshContent("all");
             REFRESH_CONTENT_ON_RESUME = false;
         }
@@ -201,7 +201,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                         }
                         refreshContent("all");
 
-                        // asynchronously delete all icons whose uuid is not linked to
+                        // asynchronously delete all icons whose UUID is not linked to
                         // (a) an important sender and (b) a still-stored notification
                         Executors.newSingleThreadExecutor().execute(() -> {
                             // get active UUIDs

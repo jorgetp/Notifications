@@ -1,19 +1,17 @@
 package com.jorgetp.notifications;
 
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
+import static com.jorgetp.notifications.MainActivity.CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.IsInDndMode;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.NOTIFICATIONS_PREFS;
-import static com.jorgetp.notifications.MainActivity.NOTIFICATION_CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -37,6 +35,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
+    private final Random random = new Random();
     private NotificationManager manager;
 
     private static String CreateKey(JSONObject json) {
@@ -134,7 +133,7 @@ public class NotificationService extends NotificationListenerService {
         if (isSilenced)
             cancelNotification(sbn.getKey());
 
-        if (postNotification)
+        if (true || postNotification)
             postSilencedNotification(json, iconBitmap[0]);
 
         // notify MainActivity for onResume
@@ -211,7 +210,7 @@ public class NotificationService extends NotificationListenerService {
             manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager != null) {
                 manager.createNotificationChannel(new NotificationChannel(
-                        NOTIFICATION_CHANNEL_ID,
+                        CHANNEL_ID,
                         "Notifications",
                         NotificationManager.IMPORTANCE_DEFAULT
                 ));
@@ -221,24 +220,16 @@ public class NotificationService extends NotificationListenerService {
         try {
             String packageName = notification.optString("package");
             String title = notification.optString("title");
+            String text = notification.optString("text");
             long postTime = notification.optLong("postTime");
 
             ApplicationInfo appInfo = getPackageManager().getApplicationInfo(packageName, 0);
             CharSequence appName = getPackageManager().getApplicationLabel(appInfo);
 
-            // PendingIntent (tap → MainActivity)
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.putExtra("notification_tapped", notification.optString("uuid"));
-            PendingIntent pendingIntent = PendingIntent.getActivity(
-                    this, 0, intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
-
-            Notification.Builder builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
+            Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
                     .setSmallIcon(R.drawable.outline_notifications_off_24)
-                    .setContentTitle(getString(R.string.silenced_notification))
-                    .setContentText(String.format("%s: %s", appName, title))
-                    .setContentIntent(pendingIntent)
+                    .setContentTitle(getString(R.string.silenced_notification, appName))
+                    .setContentText(String.format("%s: %s", title, text))
                     .setAutoCancel(true)
                     .setShowWhen(true)
                     .setWhen(postTime);
@@ -246,7 +237,7 @@ public class NotificationService extends NotificationListenerService {
             if (largeIcon != null)
                 builder.setLargeIcon(largeIcon);
 
-            manager.notify(new Random().nextInt(Integer.MAX_VALUE), builder.build());
+            manager.notify(random.nextInt(Integer.MAX_VALUE), builder.build());
 
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("NotificationService", "App not found", e);
