@@ -133,7 +133,7 @@ public class NotificationService extends NotificationListenerService {
         if (isSilenced)
             cancelNotification(sbn.getKey());
 
-        if (true || postNotification)
+        if (postNotification)
             postSilencedNotification(json, iconBitmap[0]);
 
         // notify MainActivity for onResume
