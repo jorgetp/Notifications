@@ -57,7 +57,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
-    public static final String NEW_SILENCED_NOTIFICATIONS = "Notifications-New-Silenced-Notifications";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 

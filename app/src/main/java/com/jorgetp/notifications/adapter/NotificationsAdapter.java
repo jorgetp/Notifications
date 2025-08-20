@@ -90,7 +90,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         String text = notification.optString("text");
         // String bigText = notification.optString("bigText");
         // boolean hasBigText = !bigText.isEmpty() && !text.equals(bigText);
-        boolean isSilenced = silencedAppsPrefs.contains(packageName);
+        boolean isSilencedApp = silencedAppsPrefs.contains(packageName);
         boolean isImportant = importantSendersPrefs.contains(packageName + "/" + title);
 
         long postTime = notification.optLong("postTime");
@@ -144,7 +144,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             PopupMenu popup = new PopupMenu(context, v);
             popup.getMenuInflater().inflate(R.menu.notification_popup_menu, popup.getMenu());
             MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
-            popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilenced);
+            popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilencedApp);
             popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);
 
             popup.setOnMenuItemClickListener(item -> {

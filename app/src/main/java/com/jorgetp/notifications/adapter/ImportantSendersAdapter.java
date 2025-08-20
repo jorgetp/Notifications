@@ -38,7 +38,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         prefs = context.getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
         for (String key : prefs.getAll().keySet()) {
             String value = prefs.getString(key, null);
-            String[] parts = key.split("/");
+            String[] parts = key.split("/", 2);
             senders.add(new ImportantSender(parts[0], parts[1], value));
         }
         senders.sort(Comparator.comparing(sender -> sender.sender));

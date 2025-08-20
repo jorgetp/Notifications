@@ -47,6 +47,99 @@ public class NotificationService extends NotificationListenerService {
         return packageName + "|" + title + "|" + text + "|" + postTimeBlock;
     }
 
+    @Override
+    public void onNotificationPosted(StatusBarNotification sbn) {
+        if (isSilentNotification(sbn)) {
+            if (isStandardNotification(sbn)) {
+                processNotification(sbn, true);
+            }
+        } else {
+            Executors.newSingleThreadExecutor().execute(() -> {
+                if (isStandardNotification(sbn)) {
+                    processNotification(sbn, false);
+                }
+            });
+        }
+    }
+
+    private void processNotification(StatusBarNotification sbn, boolean isSilenced) {
+        Notification notification = sbn.getNotification();
+        if (notification == null)
+            return;
+        if ((notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0)
+            return;
+
+        Bundle extras = notification.extras;
+        String title = extras.getString(Notification.EXTRA_TITLE);
+        CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
+        // CharSequence bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);
+
+        // Build JSON
+        JSONObject json = new JSONObject();
+        String uuid = UUID.randomUUID().toString();
+        try {
+            json.put("uuid", uuid);
+            json.put("package", sbn.getPackageName());
+            json.put("postTime", sbn.getPostTime());
+            json.put("title", title);
+            json.put("text", text != null ? text.toString() : null);
+
+        } catch (JSONException e) {
+            Log.e("NotificationService", "JSON error", e);
+            return;
+        }
+
+        String notificationKey = CreateKey(json);
+        SharedPreferences prefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
+        boolean postNotification = isSilenced && !prefs.contains(notificationKey);
+
+        // save notification
+        prefs.edit().putString(notificationKey, json.toString()).apply();
+
+        // save notification icon
+        Icon iconObj = notification.getLargeIcon();
+        Bitmap[] iconBitmap = new Bitmap[1];
+        if (iconObj != null) {
+            try {
+                Drawable drawable = iconObj.loadDrawable(getApplicationContext());
+                if (drawable instanceof BitmapDrawable) {
+                    iconBitmap[0] = ((BitmapDrawable) drawable).getBitmap();
+                }
+            } catch (Exception e) {
+                Log.e("NotificationService", "Error converting icon to bitmap", e);
+            }
+        }
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            if (iconBitmap[0] != null) {
+                try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
+                        Context.MODE_PRIVATE)) {
+                    iconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
+
+                    // update important sender icon if applicable
+                    SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
+                    String key = sbn.getPackageName() + "/" + title;
+                    if (importantSenders.contains(key))
+                        importantSenders.edit().putString(key, uuid).apply();
+
+                } catch (IOException e) {
+                    Log.e("NotificationService", "Error saving notification icon", e);
+                }
+            }
+        });
+
+        // silence-related actions
+        if (isSilenced)
+            cancelNotification(sbn.getKey());
+
+        if (postNotification)
+            postSilencedNotification(json, iconBitmap[0]);
+
+        // notify MainActivity for onResume
+        NEW_NOTIFICATIONS = true;
+        Log.d("NotificationService", "Notification processed: " + json);
+    }
+
     public boolean isStandardNotification(StatusBarNotification sbn) {
         // 1. Must not be a self-notification
         if (sbn.getPackageName().equals(getPackageName()))
@@ -85,6 +178,17 @@ public class NotificationService extends NotificationListenerService {
         return false;
     }
 
+    // true if weekend or weekdays 08:00-17:30
+    private boolean isBusinessHour() {
+        int day = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
+        if (day == Calendar.SATURDAY || day == Calendar.SUNDAY)
+            return false;
+
+        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+        int minute = Calendar.getInstance().get(Calendar.MINUTE);
+        return (hour >= 8 && hour <= 16) || (hour == 17 && minute <= 30);
+    }
+
     private boolean isSilentNotification(StatusBarNotification sbn) {
         if (IsInDndMode(this))
             return !isImportantNotification(sbn);
@@ -97,32 +201,6 @@ public class NotificationService extends NotificationListenerService {
                 return !isImportantNotification(sbn) && !isBusinessHour();
             default:
                 return false;
-        }
-    }
-
-    // true if weekend or weekdays 08:00-17:30
-    private boolean isBusinessHour() {
-        int day = Calendar.getInstance().get(Calendar.DAY_OF_WEEK);
-        if (day == Calendar.SATURDAY || day == Calendar.SUNDAY)
-            return false;
-
-        int hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
-        int minute = Calendar.getInstance().get(Calendar.MINUTE);
-        return (hour >= 8 && hour <= 16) || (hour == 17 && minute <= 30);
-    }
-
-    @Override
-    public void onNotificationPosted(StatusBarNotification sbn) {
-        if (isSilentNotification(sbn)) {
-            if (isStandardNotification(sbn)) {
-                processNotification(sbn, true);
-            }
-        } else {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                if (isStandardNotification(sbn)) {
-                    processNotification(sbn, false);
-                }
-            });
         }
     }
 
@@ -155,86 +233,5 @@ public class NotificationService extends NotificationListenerService {
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("NotificationService", "App not found", e);
         }
-    }
-
-    // save a notification to shared preferences
-    private void processNotification(StatusBarNotification sbn, boolean isSilenced) {
-        Notification notification = sbn.getNotification();
-        if (notification == null)
-            return;
-        if ((notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0)
-            return;
-
-        Bundle extras = notification.extras;
-        String title = extras.getString(Notification.EXTRA_TITLE);
-        CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
-        // CharSequence bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);
-
-        // Build JSON
-        JSONObject json = new JSONObject();
-        String uuid = UUID.randomUUID().toString();
-        try {
-            json.put("package", sbn.getPackageName());
-            json.put("postTime", sbn.getPostTime());
-            json.put("title", title);
-            json.put("uuid", uuid);
-            json.put("silenced", isSilenced);
-            json.put("text", text != null ? text.toString() : null);
-
-        } catch (JSONException e) {
-            Log.e("NotificationService", "JSON error", e);
-            return;
-        }
-
-        String notificationKey = CreateKey(json);
-        try {
-            json.put("key", notificationKey);
-        } catch (JSONException e) {
-            Log.e("NotificationService", "JSON error", e);
-            return;
-        }
-
-        SharedPreferences prefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-        boolean postNotification = isSilenced && !prefs.contains(notificationKey);
-
-        // save notification
-        prefs.edit().putString(notificationKey, json.toString()).apply();
-
-        // save notification icon
-        Icon iconObj = notification.getLargeIcon();
-        Bitmap iconBitmap = null;
-        if (iconObj != null) {
-            try {
-                Drawable drawable = iconObj.loadDrawable(getApplicationContext());
-                if (drawable instanceof BitmapDrawable) {
-                    iconBitmap = ((BitmapDrawable) drawable).getBitmap();
-                }
-            } catch (Exception e) {
-                Log.e("NotificationService", "Error converting icon to bitmap", e);
-            }
-        }
-
-        final Bitmap iconBitmapFinal = iconBitmap;
-        Executors.newSingleThreadExecutor().execute(() -> {
-            if (iconBitmapFinal != null) {
-                try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
-                        Context.MODE_PRIVATE)) {
-                    iconBitmapFinal.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                } catch (IOException e) {
-                    Log.e("NotificationService", "Error saving notification icon", e);
-                }
-            }
-        });
-
-        // silence-related actions
-        if (isSilenced)
-            cancelNotification(sbn.getKey());
-
-        if (postNotification)
-            postSilencedNotification(json, iconBitmap);
-
-        // notify MainActivity for onResume
-        NEW_NOTIFICATIONS = true;
-        Log.d("NotificationService", "Notification processed: " + json);
     }
 }
