@@ -9,8 +9,11 @@ import static com.jorgetp.notifications.MainActivity.NOTIFICATION_CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -34,8 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
-    public static boolean NEW_NOTIFICATIONS;
-    private NotificationManager notificationManager;
+    private NotificationManager manager;
 
     private static String CreateKey(JSONObject json) {
         String packageName = json.optString("package", "");
@@ -136,7 +138,7 @@ public class NotificationService extends NotificationListenerService {
             postSilencedNotification(json, iconBitmap[0]);
 
         // notify MainActivity for onResume
-        NEW_NOTIFICATIONS = true;
+        MainActivity.REFRESH_CONTENT_ON_RESUME = true;
         Log.d("NotificationService", "Notification processed: " + json);
     }
 
@@ -205,8 +207,16 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void postSilencedNotification(JSONObject notification, Bitmap largeIcon) {
-        if (notificationManager == null)
-            notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager == null) {
+            manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (manager != null) {
+                manager.createNotificationChannel(new NotificationChannel(
+                        NOTIFICATION_CHANNEL_ID,
+                        "Notifications",
+                        NotificationManager.IMPORTANCE_DEFAULT
+                ));
+            }
+        }
 
         try {
             String packageName = notification.optString("package");
@@ -216,11 +226,19 @@ public class NotificationService extends NotificationListenerService {
             ApplicationInfo appInfo = getPackageManager().getApplicationInfo(packageName, 0);
             CharSequence appName = getPackageManager().getApplicationLabel(appInfo);
 
+            // PendingIntent (tap → MainActivity)
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.putExtra("notification_tapped", notification.optString("uuid"));
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this, 0, intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
             Notification.Builder builder = new Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
-                    //.setSmallIcon(R.mipmap.ic_launcher)
                     .setSmallIcon(R.drawable.outline_notifications_off_24)
                     .setContentTitle(getString(R.string.silenced_notification))
                     .setContentText(String.format("%s: %s", appName, title))
+                    .setContentIntent(pendingIntent)
                     .setAutoCancel(true)
                     .setShowWhen(true)
                     .setWhen(postTime);
@@ -228,7 +246,7 @@ public class NotificationService extends NotificationListenerService {
             if (largeIcon != null)
                 builder.setLargeIcon(largeIcon);
 
-            notificationManager.notify(new Random().nextInt(Integer.MAX_VALUE), builder.build());
+            manager.notify(new Random().nextInt(Integer.MAX_VALUE), builder.build());
 
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("NotificationService", "App not found", e);

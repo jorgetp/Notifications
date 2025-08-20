@@ -11,7 +11,6 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -60,12 +59,13 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 
+    public static boolean REFRESH_CONTENT_ON_RESUME;
+
     private RecyclerView rvNotifications;
     private RecyclerView rvFilter;
     private FilterAdapter filterAdapter;
     private NotificationsAdapter notificationsAdapter;
-    private List<JSONObject> allNotifications;
-    private List<Map.Entry<String, Integer>> packageCounts;
+    private AllNotifications allNotifications;
 
     public static Date ToDate(long timestamp) {
         try {
@@ -156,9 +156,9 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     @Override
     protected void onResume() {
         super.onResume();
-        if (NotificationService.NEW_NOTIFICATIONS) {
+        if (REFRESH_CONTENT_ON_RESUME || getIntent().hasExtra("notification_tapped")) {
             refreshContent("all");
-            NotificationService.NEW_NOTIFICATIONS = false;
+            REFRESH_CONTENT_ON_RESUME = false;
         }
     }
 
@@ -274,10 +274,8 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             // Runs in the background
             List<JSONObject> selectedNotifications;
             if ("all".equals(packageName)) {
-                Pair<List<JSONObject>, List<Map.Entry<String, Integer>>> result = loadAllNotifications();
-                allNotifications = result.first;
-                packageCounts = result.second;
-                selectedNotifications = allNotifications;
+                allNotifications = loadAllNotifications();
+                selectedNotifications = allNotifications.notifications;
             } else
                 selectedNotifications = filteredNotifications(packageName);
 
@@ -285,7 +283,8 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             List<JSONObject> finalSelectedNotifications = selectedNotifications;
             runOnUiThread(() -> {
                 notificationsAdapter.updateData(finalSelectedNotifications);
-                rvNotifications.smoothScrollToPosition(0); // rvNotifications.scrollToPosition(0);
+                rvNotifications.smoothScrollToPosition(0);
+
                 if ("all".equals(packageName))
                     setupFilterView();
 
@@ -296,7 +295,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     }
 
     private void setupFilterView() {
-        filterAdapter = new FilterAdapter(this, packageCounts, this);
+        filterAdapter = new FilterAdapter(this, allNotifications.packageCounts, this);
         rvFilter.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
         rvFilter.setAdapter(filterAdapter);
     }
@@ -314,11 +313,11 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         filterAdapter.setSelectedPosition(position);
     }
 
-    private Pair<List<JSONObject>, List<Map.Entry<String, Integer>>> loadAllNotifications() {
+    private AllNotifications loadAllNotifications() {
         SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
 
-        List<JSONObject> notifications = new ArrayList<>(10);
-        Map<String, Integer> counts = new HashMap<>();
+        ArrayList<JSONObject> notifications = new ArrayList<>(10);
+        HashMap<String, Integer> counts = new HashMap<>();
         int totalCount = 0;
 
         for (Object n : notificationsPrefs.getAll().values()) {
@@ -353,12 +352,12 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         // Add "all" filter at the beginning
         packageCounts.add(0, new AbstractMap.SimpleEntry<>("all", totalCount));
 
-        return new Pair<>(notifications, packageCounts);
+        return new AllNotifications(notifications, packageCounts);
     }
 
     private List<JSONObject> filteredNotifications(String filterPackage) {
         List<JSONObject> selectedNotifications = new ArrayList<>();
-        for (JSONObject notification : allNotifications) {
+        for (JSONObject notification : allNotifications.notifications) {
             try {
                 if (notification.getString("package").equals(filterPackage)) {
                     selectedNotifications.add(notification);
@@ -368,5 +367,16 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             }
         }
         return selectedNotifications;
+    }
+
+    private static class AllNotifications {
+        private final ArrayList<JSONObject> notifications;
+        private final List<Map.Entry<String, Integer>> packageCounts;
+
+        public AllNotifications(ArrayList<JSONObject> notifications,
+                                List<Map.Entry<String, Integer>> packageCounts) {
+            this.notifications = notifications;
+            this.packageCounts = packageCounts;
+        }
     }
 }
