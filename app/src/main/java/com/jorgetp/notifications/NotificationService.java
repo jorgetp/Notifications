@@ -229,7 +229,7 @@ public class NotificationService extends NotificationListenerService {
             Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
                     .setSmallIcon(R.drawable.outline_notifications_off_24)
                     .setContentTitle(getString(R.string.silenced_notification, appName))
-                    .setContentText(String.format("%s: %s", title, text))
+                    .setContentText(String.format("%s\n%s", title, text))
                     .setAutoCancel(true)
                     .setShowWhen(true)
                     .setWhen(postTime);
