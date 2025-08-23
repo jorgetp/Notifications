@@ -98,22 +98,22 @@ public class NotificationService extends NotificationListenerService {
         // save notification
         prefs.edit().putString(notificationKey, json.toString()).apply();
 
-        // save notification icon
-        Icon iconObj = notification.getLargeIcon();
-        Bitmap[] iconBitmap = new Bitmap[1];
-        boolean[] saveIconToStorage = {false};
-        if (iconObj != null) {
-            // notification has large icon
+        // get and save icon
+        Icon icon = notification.getLargeIcon();
+        Drawable drawable = null;
+        if (icon != null) {
             try {
-                Drawable drawable = iconObj.loadDrawable(this);
-                if (drawable instanceof BitmapDrawable) {
-                    iconBitmap[0] = ((BitmapDrawable) drawable).getBitmap();
-                    saveIconToStorage[0] = true;
-                }
+                drawable = icon.loadDrawable(getApplicationContext());
             } catch (Exception e) {
                 Log.e("NotificationService", "Error converting icon to bitmap", e);
             }
-        } else {
+        }
+
+        if (isSilenced)
+            cancelNotification(sbn.getKey());
+
+        Bitmap[] iconBitmap = {null};
+        if (drawable == null) {
             // notification has no large icon, so try to create it as app's icon
             try {
                 ApplicationInfo appInfo = getPackageManager().getApplicationInfo(sbn.getPackageName(), 0);
@@ -136,29 +136,30 @@ public class NotificationService extends NotificationListenerService {
             } catch (Exception e) {
                 Log.e("NotificationService", "App not found", e);
             }
-        }
 
-        Executors.newSingleThreadExecutor().execute(() -> {
-            if (saveIconToStorage[0]) {
-                try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
-                        Context.MODE_PRIVATE)) {
-                    iconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
+        } else {
+            // notification has large icon
+            if (drawable instanceof BitmapDrawable) {
+                iconBitmap[0] = ((BitmapDrawable) drawable).getBitmap();
 
-                    // update important sender icon if applicable
-                    SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
-                    String key = sbn.getPackageName() + "/" + title;
-                    if (importantSenders.contains(key))
-                        importantSenders.edit().putString(key, uuid).apply();
+                // asynchronously save icon to storage
+                Executors.newSingleThreadExecutor().execute(() -> {
+                    try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
+                            Context.MODE_PRIVATE)) {
+                        iconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
 
-                } catch (IOException e) {
-                    Log.e("NotificationService", "Error saving notification icon", e);
-                }
+                        // update important sender icon if applicable
+                        SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
+                        String key = sbn.getPackageName() + "/" + title;
+                        if (importantSenders.contains(key))
+                            importantSenders.edit().putString(key, uuid).apply();
+
+                    } catch (IOException e) {
+                        Log.e("NotificationService", "Error saving notification icon", e);
+                    }
+                });
             }
-        });
-
-        // silence-related actions
-        if (isSilenced)
-            cancelNotification(sbn.getKey());
+        }
 
         if (postNotification)
             postSilencedNotification(json, iconBitmap[0]);
