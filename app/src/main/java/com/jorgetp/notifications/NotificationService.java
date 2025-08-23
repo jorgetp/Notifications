@@ -98,37 +98,38 @@ public class NotificationService extends NotificationListenerService {
         // save notification
         prefs.edit().putString(notificationKey, json.toString()).apply();
 
-        // get and save icon
-        Icon icon = notification.getLargeIcon();
-        Drawable drawable = null;
-        if (icon != null) {
+        // get and save icons
+        Icon smallIcon = notification.getSmallIcon();
+        Icon largeIcon = notification.getLargeIcon();
+        Drawable largeIconDrawable = null;
+        if (largeIcon != null) {
             try {
-                drawable = icon.loadDrawable(getApplicationContext());
+                largeIconDrawable = largeIcon.loadDrawable(getApplicationContext());
             } catch (Exception e) {
-                Log.e("NotificationService", "Error converting icon to bitmap", e);
+                Log.e("NotificationService", "Error converting large icon to bitmap", e);
             }
         }
 
         if (isSilenced)
             cancelNotification(sbn.getKey());
 
-        Bitmap[] iconBitmap = {null};
-        if (drawable == null) {
+        Bitmap[] largeIconBitmap = {null};
+        if (largeIconDrawable == null) {
             // notification has no large icon, so try to create it as app's icon
             try {
                 ApplicationInfo appInfo = getPackageManager().getApplicationInfo(sbn.getPackageName(), 0);
                 Drawable appIconDrawable = getPackageManager().getApplicationIcon(appInfo);
 
                 if (appIconDrawable instanceof BitmapDrawable) {
-                    iconBitmap[0] = ((BitmapDrawable) appIconDrawable).getBitmap();
+                    largeIconBitmap[0] = ((BitmapDrawable) appIconDrawable).getBitmap();
                 } else {
                     // convert non-BitmapDrawable to Bitmap
-                    iconBitmap[0] = Bitmap.createBitmap(
+                    largeIconBitmap[0] = Bitmap.createBitmap(
                             appIconDrawable.getIntrinsicWidth(),
                             appIconDrawable.getIntrinsicHeight(),
                             Bitmap.Config.ARGB_8888
                     );
-                    Canvas canvas = new Canvas(iconBitmap[0]);
+                    Canvas canvas = new Canvas(largeIconBitmap[0]);
                     appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                     appIconDrawable.draw(canvas);
                 }
@@ -139,14 +140,14 @@ public class NotificationService extends NotificationListenerService {
 
         } else {
             // notification has large icon
-            if (drawable instanceof BitmapDrawable) {
-                iconBitmap[0] = ((BitmapDrawable) drawable).getBitmap();
+            if (largeIconDrawable instanceof BitmapDrawable) {
+                largeIconBitmap[0] = ((BitmapDrawable) largeIconDrawable).getBitmap();
 
                 // asynchronously save icon to storage
                 Executors.newSingleThreadExecutor().execute(() -> {
                     try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
                             Context.MODE_PRIVATE)) {
-                        iconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
+                        largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
 
                         // update important sender icon if applicable
                         SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
@@ -162,7 +163,7 @@ public class NotificationService extends NotificationListenerService {
         }
 
         if (postNotification)
-            postSilencedNotification(json, iconBitmap[0]);
+            postSilencedNotification(json, smallIcon, largeIconBitmap[0]);
 
         // notify MainActivity for onResume
         MainActivity.REFRESH_CONTENT_ON_RESUME = true;
@@ -233,7 +234,7 @@ public class NotificationService extends NotificationListenerService {
         }
     }
 
-    private void postSilencedNotification(JSONObject notification, Bitmap largeIcon) {
+    private void postSilencedNotification(JSONObject notification, Icon smallIcon, Bitmap largeIcon) {
         if (manager == null) {
             manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager != null) {
@@ -255,7 +256,7 @@ public class NotificationService extends NotificationListenerService {
             CharSequence appName = getPackageManager().getApplicationLabel(appInfo);
 
             Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(R.drawable.outline_notifications_off_24)
+                    .setSmallIcon(smallIcon)
                     .setContentTitle(getString(R.string.silenced_notification, appName))
                     .setContentText(String.format("%s\n%s", title, text))
                     .setAutoCancel(true)
