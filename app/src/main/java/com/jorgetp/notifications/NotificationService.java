@@ -16,6 +16,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
@@ -100,19 +101,45 @@ public class NotificationService extends NotificationListenerService {
         // save notification icon
         Icon iconObj = notification.getLargeIcon();
         Bitmap[] iconBitmap = new Bitmap[1];
+        boolean[] saveIconToStorage = {false};
         if (iconObj != null) {
+            // notification has large icon
             try {
                 Drawable drawable = iconObj.loadDrawable(this);
                 if (drawable instanceof BitmapDrawable) {
                     iconBitmap[0] = ((BitmapDrawable) drawable).getBitmap();
+                    saveIconToStorage[0] = true;
                 }
             } catch (Exception e) {
                 Log.e("NotificationService", "Error converting icon to bitmap", e);
             }
+        } else {
+            // notification has no large icon, so try to create it as app's icon
+            try {
+                ApplicationInfo appInfo = getPackageManager().getApplicationInfo(sbn.getPackageName(), 0);
+                Drawable appIconDrawable = getPackageManager().getApplicationIcon(appInfo);
+
+                if (appIconDrawable instanceof BitmapDrawable) {
+                    iconBitmap[0] = ((BitmapDrawable) appIconDrawable).getBitmap();
+                } else {
+                    // convert non-BitmapDrawable to Bitmap
+                    iconBitmap[0] = Bitmap.createBitmap(
+                            appIconDrawable.getIntrinsicWidth(),
+                            appIconDrawable.getIntrinsicHeight(),
+                            Bitmap.Config.ARGB_8888
+                    );
+                    Canvas canvas = new Canvas(iconBitmap[0]);
+                    appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                    appIconDrawable.draw(canvas);
+                }
+
+            } catch (Exception e) {
+                Log.e("NotificationService", "App not found", e);
+            }
         }
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            if (iconBitmap[0] != null) {
+            if (saveIconToStorage[0]) {
                 try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
                         Context.MODE_PRIVATE)) {
                     iconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
