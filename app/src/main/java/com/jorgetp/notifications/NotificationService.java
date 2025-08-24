@@ -40,13 +40,13 @@ public class NotificationService extends NotificationListenerService {
     private NotificationManager manager;
 
     private static String CreateKey(JSONObject json) {
+        long postTimeBlock = json.optLong("postTime") / 30000;
         String packageName = json.optString("package", "");
         String title = json.optString("title", "");
         String textRaw = json.optString("text", "");
         String text = textRaw.substring(0, Math.min(300, textRaw.length()));
 
-        long postTimeBlock = json.optLong("postTime") / 30000;
-        return packageName + "|" + title + "|" + text + "|" + postTimeBlock;
+        return postTimeBlock + "|" + packageName + "|" + title + "|" + text;
     }
 
     @Override
@@ -74,9 +74,8 @@ public class NotificationService extends NotificationListenerService {
         Bundle extras = notification.extras;
         String title = extras.getString(Notification.EXTRA_TITLE);
         CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
-        // CharSequence bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT);
 
-        // Build JSON
+        // build JSON
         JSONObject json = new JSONObject();
         String uuid = UUID.randomUUID().toString();
         try {
@@ -91,14 +90,7 @@ public class NotificationService extends NotificationListenerService {
             return;
         }
 
-        String notificationKey = CreateKey(json);
-        SharedPreferences prefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-        boolean postNotification = isSilenced && !prefs.contains(notificationKey);
-
-        // save notification
-        prefs.edit().putString(notificationKey, json.toString()).apply();
-
-        // get and save icons
+        // get icons
         Icon smallIcon = notification.getSmallIcon();
         Icon largeIcon = notification.getLargeIcon();
         Drawable largeIconDrawable = null;
@@ -113,29 +105,39 @@ public class NotificationService extends NotificationListenerService {
         if (isSilenced)
             cancelNotification(sbn.getKey());
 
+        String notificationKey = CreateKey(json);
+        SharedPreferences prefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
+        boolean postNotification = isSilenced && !prefs.contains(notificationKey);
+
+        // save notification
+        prefs.edit().putString(notificationKey, json.toString()).apply();
+
+        // convert and save large icon
         Bitmap[] largeIconBitmap = {null};
         if (largeIconDrawable == null) {
-            // notification has no large icon, so try to create it as app's icon
-            try {
-                ApplicationInfo appInfo = getPackageManager().getApplicationInfo(sbn.getPackageName(), 0);
-                Drawable appIconDrawable = getPackageManager().getApplicationIcon(appInfo);
+            // notification has no large icon, so create it from app's icon if to be posted
+            if (postNotification) {
+                try {
+                    ApplicationInfo appInfo = getPackageManager().getApplicationInfo(sbn.getPackageName(), 0);
+                    Drawable appIconDrawable = getPackageManager().getApplicationIcon(appInfo);
 
-                if (appIconDrawable instanceof BitmapDrawable) {
-                    largeIconBitmap[0] = ((BitmapDrawable) appIconDrawable).getBitmap();
-                } else {
-                    // convert non-BitmapDrawable to Bitmap
-                    largeIconBitmap[0] = Bitmap.createBitmap(
-                            appIconDrawable.getIntrinsicWidth(),
-                            appIconDrawable.getIntrinsicHeight(),
-                            Bitmap.Config.ARGB_8888
-                    );
-                    Canvas canvas = new Canvas(largeIconBitmap[0]);
-                    appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                    appIconDrawable.draw(canvas);
+                    if (appIconDrawable instanceof BitmapDrawable) {
+                        largeIconBitmap[0] = ((BitmapDrawable) appIconDrawable).getBitmap();
+                    } else {
+                        // convert non-BitmapDrawable to Bitmap
+                        largeIconBitmap[0] = Bitmap.createBitmap(
+                                appIconDrawable.getIntrinsicWidth(),
+                                appIconDrawable.getIntrinsicHeight(),
+                                Bitmap.Config.ARGB_8888
+                        );
+                        Canvas canvas = new Canvas(largeIconBitmap[0]);
+                        appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                        appIconDrawable.draw(canvas);
+                    }
+
+                } catch (Exception e) {
+                    Log.e("NotificationService", "App not found", e);
                 }
-
-            } catch (Exception e) {
-                Log.e("NotificationService", "App not found", e);
             }
 
         } else {
