@@ -11,7 +11,9 @@ import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -105,6 +107,7 @@ public class NotificationService extends NotificationListenerService {
         if (isSilenced)
             cancelNotification(sbn.getKey());
 
+        // asynchronously continue processing, i.e. save notification, icons, etc...
         Executors.newSingleThreadExecutor().execute(() -> {
             String notificationKey = CreateKey(json);
             SharedPreferences prefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
@@ -129,8 +132,7 @@ public class NotificationService extends NotificationListenerService {
                             largeIconBitmap[0] = Bitmap.createBitmap(
                                     appIconDrawable.getIntrinsicWidth(),
                                     appIconDrawable.getIntrinsicHeight(),
-                                    Bitmap.Config.ARGB_8888
-                            );
+                                    Bitmap.Config.ARGB_8888);
                             Canvas canvas = new Canvas(largeIconBitmap[0]);
                             appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                             appIconDrawable.draw(canvas);
@@ -147,21 +149,22 @@ public class NotificationService extends NotificationListenerService {
                     largeIconBitmap[0] = ((BitmapDrawable) largeIconDrawable[0]).getBitmap();
 
                     // asynchronously save icon to storage
-                    // Executors.newSingleThreadExecutor().execute(() -> {
-                    try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
-                            Context.MODE_PRIVATE)) {
-                        largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
+                    Executors.newSingleThreadExecutor().execute(() -> {
+                        try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
+                                Context.MODE_PRIVATE)) {
+                            largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
 
-                        // update important sender icon if applicable
-                        SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
-                        String key = sbn.getPackageName() + "/" + title;
-                        if (importantSenders.contains(key))
-                            importantSenders.edit().putString(key, uuid).apply();
+                            // update important sender icon if applicable
+                            SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
+                                    Context.MODE_PRIVATE);
+                            String key = sbn.getPackageName() + "/" + title;
+                            if (importantSenders.contains(key))
+                                importantSenders.edit().putString(key, uuid).apply();
 
-                    } catch (IOException e) {
-                        Log.e("NotificationService", "Error saving notification icon", e);
-                    }
-                    // });
+                        } catch (IOException e) {
+                            Log.e("NotificationService", "Error saving notification icon", e);
+                        }
+                    });
                 }
             }
 
@@ -245,36 +248,51 @@ public class NotificationService extends NotificationListenerService {
                 manager.createNotificationChannel(new NotificationChannel(
                         CHANNEL_ID,
                         "Notifications",
-                        NotificationManager.IMPORTANCE_DEFAULT
-                ));
+                        NotificationManager.IMPORTANCE_DEFAULT));
             }
         }
 
+        String packageName = notification.optString("package");
+        String title = notification.optString("title");
+        String text = notification.optString("text");
+        long postTime = notification.optLong("postTime");
+
+        // create notification builder
+        Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.outline_notifications_off_24)
+                .setContentTitle(getString(R.string.silenced_notification, packageName))
+                .setContentText(String.format("%s\n%s", title, text))
+                .setAutoCancel(true)
+                .setShowWhen(true)
+                .setWhen(postTime);
+
+        // set small icon
+        if (smallIcon != null)
+            builder.setSmallIcon(smallIcon);
+
+        // set large icon
+        if (largeIcon != null)
+            builder.setLargeIcon(largeIcon);
+
+        // set notification fields based on package manager
+        PackageManager pm = getPackageManager();
         try {
-            String packageName = notification.optString("package");
-            String title = notification.optString("title");
-            String text = notification.optString("text");
-            long postTime = notification.optLong("postTime");
-
-            ApplicationInfo appInfo = getPackageManager().getApplicationInfo(packageName, 0);
-            CharSequence appName = getPackageManager().getApplicationLabel(appInfo);
-
-            Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
-                    //.setSmallIcon(R.drawable.outline_notifications_off_24)
-                    .setSmallIcon(smallIcon)
-                    .setContentTitle(getString(R.string.silenced_notification, appName))
-                    .setContentText(String.format("%s\n%s", title, text))
-                    .setAutoCancel(true)
-                    .setShowWhen(true)
-                    .setWhen(postTime);
-
-            if (largeIcon != null)
-                builder.setLargeIcon(largeIcon);
-
-            manager.notify(random.nextInt(Integer.MAX_VALUE), builder.build());
-
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+            CharSequence appName = pm.getApplicationLabel(appInfo);
+            builder.setContentTitle(getString(R.string.silenced_notification, appName));
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("NotificationService", "App not found", e);
         }
+
+        // set tap action to open notification's original activity
+        Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
+        if (launchIntent != null) {
+            builder.setContentIntent(PendingIntent.getActivity(
+                    this, 0, launchIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        }
+
+        // finally notify
+        manager.notify(random.nextInt(Integer.MAX_VALUE), builder.build());
     }
 }
