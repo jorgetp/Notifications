@@ -117,13 +117,14 @@ public class NotificationService extends NotificationListenerService {
             prefs.edit().putString(notificationKey, json.toString()).apply();
 
             // save icon to storage
-            Executors.newSingleThreadExecutor().execute(() -> {
-                if (largeIconDrawable[0] != null && largeIconDrawable[0] instanceof BitmapDrawable) {
-                    Bitmap iconBitmap = ((BitmapDrawable) largeIconDrawable[0]).getBitmap();
+            Bitmap[] largeIconBitmap = {null};
+            if (largeIconDrawable[0] != null && largeIconDrawable[0] instanceof BitmapDrawable) {
+                largeIconBitmap[0] = ((BitmapDrawable) largeIconDrawable[0]).getBitmap();
 
+                Executors.newSingleThreadExecutor().execute(() -> {
                     try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
                             Context.MODE_PRIVATE)) {
-                        iconBitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+                        largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
 
                         // update important sender icon if applicable
                         SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
@@ -135,13 +136,12 @@ public class NotificationService extends NotificationListenerService {
                     } catch (IOException e) {
                         Log.e("NotificationService", "Error saving notification icon", e);
                     }
-                }
-
-            });
+                });
+            }
 
             // post silenced notification
             if (postNotification)
-                postSilencedNotification(json);
+                postSilencedNotification(json, smallIcon, largeIconBitmap[0]);
 
             // notify MainActivity for onResume
             MainActivity.REFRESH_CONTENT_ON_RESUME = true;
@@ -214,7 +214,7 @@ public class NotificationService extends NotificationListenerService {
         }
     }
 
-    private void postSilencedNotification(JSONObject notification) {
+    private void postSilencedNotification(JSONObject notification, Icon smallIcon, Bitmap largeIcon) {
         if (manager == null) {
             manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             if (manager != null) {
@@ -239,33 +239,40 @@ public class NotificationService extends NotificationListenerService {
                 .setShowWhen(true)
                 .setWhen(postTime);
 
-        // set notification fields based on package manager
-        PackageManager pm = getPackageManager();
-        try {
-            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-            Drawable appIconDrawable = pm.getApplicationIcon(appInfo);
-            Bitmap iconBitmap = null;
-            if (appIconDrawable instanceof BitmapDrawable) {
-                iconBitmap = ((BitmapDrawable) appIconDrawable).getBitmap();
-            } else {
-                // convert non-BitmapDrawable to Bitmap
-                iconBitmap = Bitmap.createBitmap(
-                        appIconDrawable.getIntrinsicWidth(),
-                        appIconDrawable.getIntrinsicHeight(),
-                        Bitmap.Config.ARGB_8888);
-                Canvas canvas = new Canvas(iconBitmap);
-                appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                appIconDrawable.draw(canvas);
+        if (smallIcon != null)
+            builder.setSmallIcon(smallIcon);
+
+        if (largeIcon != null)
+            builder.setLargeIcon(largeIcon);
+        else {
+            // set large icon as the original app icon
+            try {
+                PackageManager pm = getPackageManager();
+                ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+                Drawable appIconDrawable = pm.getApplicationIcon(appInfo);
+                Bitmap iconBitmap;
+                if (appIconDrawable instanceof BitmapDrawable) {
+                    iconBitmap = ((BitmapDrawable) appIconDrawable).getBitmap();
+                } else {
+                    // convert non-BitmapDrawable to Bitmap
+                    iconBitmap = Bitmap.createBitmap(
+                            appIconDrawable.getIntrinsicWidth(),
+                            appIconDrawable.getIntrinsicHeight(),
+                            Bitmap.Config.ARGB_8888);
+                    Canvas canvas = new Canvas(iconBitmap);
+                    appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                    appIconDrawable.draw(canvas);
+                }
+
+                builder.setLargeIcon(iconBitmap);
+
+            } catch (PackageManager.NameNotFoundException e) {
+                Log.e("NotificationService", "App not found", e);
             }
-
-            builder.setLargeIcon(iconBitmap);
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e("NotificationService", "App not found", e);
         }
 
         // set tap action to open notification's original activity
-        Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(packageName);
         if (launchIntent != null) {
             builder.setContentIntent(PendingIntent.getActivity(
                     this, 0, launchIntent,
