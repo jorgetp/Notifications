@@ -16,10 +16,10 @@
             android:icon="@drawable/outline_favorite_24"
             android:title="@string/important_senders" />
     </group>
-    <!--<group android:id="@+id/group_general">
+    <group android:id="@+id/group_general">
         <item
             android:id="@+id/menu_settings"
             android:icon="@drawable/outline_settings_24"
             android:title="@string/settings" />
-    </group>-->
+    </group>
 </menu>

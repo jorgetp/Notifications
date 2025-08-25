@@ -1,0 +1,18 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory app:title="@string/general">
+        <SwitchPreference
+            app:key="enable_as_nsl"
+            app:summary="@string/enable_as_nsl_summary"
+            app:title="@string/enable_as_nsl"
+            app:useSimpleSummaryProvider="true" />
+
+        <SwitchPreference
+            app:key="post_silenced_notifications"
+            app:summary="@string/post_silenced_notifications_summary"
+            app:title="@string/post_silenced_notifications"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

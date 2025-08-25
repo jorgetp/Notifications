@@ -6,10 +6,10 @@ import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.IsInDndMode;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.NOTIFICATIONS_PREFS;
+import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
-import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -110,11 +110,13 @@ public class NotificationService extends NotificationListenerService {
         // asynchronously continue processing, i.e. save notification, icons, etc...
         Executors.newSingleThreadExecutor().execute(() -> {
             String notificationKey = CreateKey(json);
-            SharedPreferences prefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-            boolean postNotification = isSilenced && !prefs.contains(notificationKey);
+            SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
+            SharedPreferences settingsPrefs = getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE);
+            boolean postNotification = settingsPrefs.getBoolean("post_silenced_notifications", false)
+                    && isSilenced && !notificationsPrefs.contains(notificationKey);
 
             // save notification
-            prefs.edit().putString(notificationKey, json.toString()).apply();
+            notificationsPrefs.edit().putString(notificationKey, json.toString()).apply();
 
             // save icon to storage
             Bitmap[] largeIconBitmap = {null};
@@ -215,15 +217,8 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void postSilencedNotification(JSONObject notification, Icon smallIcon, Bitmap largeIcon) {
-        if (manager == null) {
+        if (manager == null)
             manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            if (manager != null) {
-                manager.createNotificationChannel(new NotificationChannel(
-                        CHANNEL_ID,
-                        "Notifications",
-                        NotificationManager.IMPORTANCE_DEFAULT));
-            }
-        }
 
         String packageName = notification.optString("package");
         String title = notification.optString("title");

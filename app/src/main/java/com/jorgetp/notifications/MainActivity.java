@@ -1,15 +1,14 @@
 package com.jorgetp.notifications;
 
+import static com.jorgetp.notifications.SettingsActivity.IsNotificationServiceEnabled;
+
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -54,6 +53,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity implements FilterAdapter.OnAppFilterClickListener {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
     public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
+    public static final String SETTINGS_PREFS = "Notifications-Settings";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
     public static final int ALWAYS = 1001;
@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             return insets;
         });
 
-        if (isNotificationServiceEnabled()) {
+        if (IsNotificationServiceEnabled(this)) {
             NotificationManager notificationManager = (NotificationManager) getSystemService(
                     Context.NOTIFICATION_SERVICE);
             NotificationChannel channel = new NotificationChannel(
@@ -130,19 +130,8 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                     getString(R.string.app_name),
                     NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(channel);
-
-        } else {
-            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
-                    .setTitle(R.string.app_name)
-                    .setMessage(R.string.enable_service_message)
-                    .setCancelable(false)
-                    .setPositiveButton(android.R.string.ok,
-                            (dialog, id) -> startActivity(
-                                    new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")))
-                    .setNegativeButton(android.R.string.cancel,
-                            (dialog, id) -> MainActivity.this.finishAndRemoveTask());
-            dialogBuilder.create().show();
-        }
+        } else
+            Toast.makeText(this, R.string.nsl_not_enabled, Toast.LENGTH_SHORT).show();
 
         rvNotifications = findViewById(R.id.rvNotifications);
         rvFilter = findViewById(R.id.rvFilter);
@@ -248,24 +237,12 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             intent.putExtra("adapter", ImportantSendersAdapter.class.getSimpleName());
             startActivity(intent);
             return true;
+
+        } else if (itemId == R.id.menu_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
         }
 
-        return false;
-    }
-
-    private boolean isNotificationServiceEnabled() {
-        String pkgName = getPackageName();
-        String enabledListeners = Settings.Secure.getString(getContentResolver(),
-                "enabled_notification_listeners");
-        if (!TextUtils.isEmpty(enabledListeners)) {
-            String[] listeners = enabledListeners.split(":");
-            for (String listener : listeners) {
-                ComponentName cn = ComponentName.unflattenFromString(listener);
-                if (cn != null && TextUtils.equals(pkgName, cn.getPackageName())) {
-                    return true;
-                }
-            }
-        }
         return false;
     }
 

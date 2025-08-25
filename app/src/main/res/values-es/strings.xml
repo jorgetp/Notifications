@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name">Notificaciones</string>
-    <string name="enable_service_message">Habilita Registro de Notificaciones como servicio de notificaciones</string>
+    <string name="general">General</string>
+    <string name="post_silenced_notifications">Mostrar notificaciones silenciadas</string>
+    <string name="enable_as_nsl_summary">Permite que esta app acceda y controle las notificaciones standards de tu dispositivo</string>
+    <string name="post_silenced_notifications_summary">Cuando una notificación es silenciada, notifica con esta app</string>
+    <string name="enable_as_nsl">Habilita como servicio de notificaciones</string>
+    <string name="nsl_not_enabled">El servicio de notificaciones no está habilitado, por favor habilitarlo en la configuración.</string>
     <string name="menu_clear_all_except_today">Borrar todo excepto hoy</string>
     <string name="menu_clear_all_except_today_confirmation">¿Estás seguro de que deseas borrar todas las notificaciones excepto las de hoy?</string>
     <string name="go_to_app">Ir a la app</string>
