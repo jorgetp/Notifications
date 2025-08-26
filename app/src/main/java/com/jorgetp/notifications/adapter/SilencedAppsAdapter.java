@@ -9,7 +9,6 @@ import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.util.Log;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -27,7 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapter.ViewHolder> {
-    private final ArrayList<Pair<String, Integer>> apps;
+    private final ArrayList<SilencedApp> apps;
     private final Context context;
     private final SharedPreferences prefs;
 
@@ -39,7 +38,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         PackageManager pm = context.getPackageManager();
         HashMap<String, String> appNames = new HashMap<>();
         for (String packageName : prefs.getAll().keySet()) {
-            apps.add(new Pair<>(packageName, prefs.getInt(packageName, 0)));
+            apps.add(new SilencedApp(packageName, prefs.getInt(packageName, 0)));
             try {
                 if (!appNames.containsKey(packageName)) {
                     ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
@@ -54,7 +53,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         // sort apps by app name
         apps.sort((o1, o2) -> {
             try {
-                return appNames.get(o1.first).compareTo(appNames.get(o2.first));
+                return appNames.get(o1.packageName).compareTo(appNames.get(o2.packageName));
             } catch (NullPointerException e) {
                 Log.e("SilencedAppsAdapter", "Sorting error", e);
                 return 0;
@@ -82,18 +81,16 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int i) {
-        Pair<String, Integer> app = apps.get(i);
-        String packageName = app.first;
-        holder.tvApp.setText(packageName);
+        SilencedApp app = apps.get(i);
 
-        int silenced = apps.get(i).second;
-        holder.tvSilencedWhen.setText(silenced == ALWAYS ?
+        holder.tvApp.setText(app.packageName);
+        holder.tvSilencedWhen.setText(app.silencedWhen == ALWAYS ?
                 context.getString(R.string.silenced_always) :
                 context.getString(R.string.silenced_non_business));
 
         // Load app name and icon
         try {
-            ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(packageName, 0);
+            ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(app.packageName, 0);
             CharSequence appName = context.getPackageManager().getApplicationLabel(appInfo);
             holder.tvApp.setText(appName);
             holder.ivIcon.setImageDrawable(context.getPackageManager().getApplicationIcon(appInfo));
@@ -109,8 +106,8 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
                 if (itemId == R.id.silenced_always) {
-                    prefs.edit().putInt(packageName, ALWAYS).apply();
-                    apps.set(i, new Pair<>(packageName, ALWAYS));
+                    prefs.edit().putInt(app.packageName, ALWAYS).apply();
+                    apps.set(i, new SilencedApp(app.packageName, ALWAYS));
                     notifyItemChanged(i);
 
                     Toast.makeText(context, context.getString(R.string.silenced_always),
@@ -118,8 +115,8 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
                     return true;
 
                 } else if (itemId == R.id.silenced_non_business) {
-                    prefs.edit().putInt(packageName, NON_BUSINESS).apply();
-                    apps.set(i, new Pair<>(packageName, NON_BUSINESS));
+                    prefs.edit().putInt(app.packageName, NON_BUSINESS).apply();
+                    apps.set(i, new SilencedApp(app.packageName, NON_BUSINESS));
                     notifyItemChanged(i);
 
                     Toast.makeText(context, context.getString(R.string.silenced_non_business),
@@ -127,7 +124,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
                     return true;
 
                 } else if (itemId == R.id.not_silenced) {
-                    prefs.edit().remove(packageName).apply();
+                    prefs.edit().remove(app.packageName).apply();
                     apps.remove(i);
                     notifyItemRemoved(i);
 
@@ -154,5 +151,14 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
             tvSilencedWhen = itemView.findViewById(R.id.tvSilencedWhen);
         }
     }
-}
 
+    public static class SilencedApp {
+        private final String packageName;
+        private final int silencedWhen;
+
+        public SilencedApp(String packageName, int silencedWhen) {
+            this.packageName = packageName;
+            this.silencedWhen = silencedWhen;
+        }
+    }
+}

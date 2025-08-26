@@ -28,11 +28,11 @@
         app:layout_constraintTop_toBottomOf="@id/rvFilter" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabRefresh"
+        android:id="@+id/fabScroll"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/md"
-        android:src="@android:drawable/ic_popup_sync"
+        android:src="@drawable/outline_keyboard_double_arrow_up_24"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

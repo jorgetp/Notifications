@@ -1,11 +1,6 @@
 <resources>
     <string name="app_name">Notifications</string>
-    <string name="general">General</string>
-    <string name="post_silenced_notifications">Post silenced notifications</string>
-    <string name="enable_as_nsl_summary">Allow this app to access and control your device\'s standard notifications</string>
-    <string name="post_silenced_notifications_summary">When a notification is silenced, notify with this app</string>
     <string name="enable_as_nsl">Enable as notification service</string>
-    <string name="nsl_not_enabled">Not listening for notifications</string>
     <string name="menu_clear_all_except_today">Clear all except today</string>
     <string name="menu_clear_all_except_today_confirmation">Are you sure you want to clear all notifications except today?</string>
     <string name="go_to_app">Go to app</string>
@@ -21,6 +16,7 @@
     <string name="tap_to_unset_as_important">Tap to unset as important</string>
     <string name="unset_as_important">Unset as important</string>
     <string name="important_senders">Important senders</string>
+    <string name="yesterday">Yesterday %s</string>
     <string name="all">" All "</string>
     <string name="in_dnd_mode">In DND mode</string>
     <string name="pop_out">Pop out</string>

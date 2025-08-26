@@ -6,7 +6,6 @@ import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.IsInDndMode;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.NOTIFICATIONS_PREFS;
-import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
@@ -111,9 +110,7 @@ public class NotificationService extends NotificationListenerService {
         Executors.newSingleThreadExecutor().execute(() -> {
             String notificationKey = CreateKey(json);
             SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-            SharedPreferences settingsPrefs = getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE);
-            boolean postNotification = settingsPrefs.getBoolean("post_silenced_notifications", false)
-                    && isSilenced && !notificationsPrefs.contains(notificationKey);
+            boolean postNotification = isSilenced && !notificationsPrefs.contains(notificationKey);
 
             // save notification
             notificationsPrefs.edit().putString(notificationKey, json.toString()).apply();

@@ -3,6 +3,7 @@ package com.jorgetp.notifications.adapter;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -51,17 +52,19 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
             holder.ivIcon.setVisibility(View.GONE);
             holder.tvApp.setText(R.string.all);
         } else {
+            holder.ivIcon.setImageResource(R.mipmap.ic_launcher);
             holder.ivIcon.setVisibility(View.VISIBLE);
+            holder.tvApp.setText(packageName);
+
             PackageManager pm = context.getPackageManager();
             try {
                 ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
                 holder.ivIcon.setImageDrawable(pm.getApplicationIcon(appInfo));
                 holder.tvApp.setText(pm.getApplicationLabel(appInfo));
             } catch (PackageManager.NameNotFoundException e) {
-                holder.ivIcon.setImageResource(R.mipmap.ic_launcher);
-                holder.tvApp.setText(packageName);
+                Log.e("FilterAdapter", "App not found", e);
             }
-            //holder.tvApp.setText(String.format("%d", entry.getValue()));
+            // holder.tvApp.setText(String.format("%d", entry.getValue()));
         }
 
         holder.itemView.setOnClickListener(v -> {

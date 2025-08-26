@@ -15,10 +15,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Notifications">
         <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings" />
-        <activity
             android:name=".ItemsActivity"
             android:exported="false" />
         <activity

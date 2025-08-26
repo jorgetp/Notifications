@@ -25,10 +25,9 @@ import com.jorgetp.notifications.R;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 
 public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSendersAdapter.ViewHolder> {
-    private final List<ImportantSender> senders;
+    private final ArrayList<ImportantSender> senders;
     private final Context context;
     private final SharedPreferences prefs;
 
@@ -37,7 +36,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         senders = new ArrayList<>(10);
         prefs = context.getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
         for (String key : prefs.getAll().keySet()) {
-            String value = prefs.getString(key, null);
+            String value = prefs.getString(key, "");
             String[] parts = key.split("/", 2);
             senders.add(new ImportantSender(parts[0], parts[1], value));
         }
@@ -115,7 +114,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         }
     }
 
-    public static class ImportantSender {
+    private static class ImportantSender {
         private final String packageName;
         private final String sender;
         private final String uuid;

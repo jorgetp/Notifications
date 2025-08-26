@@ -42,24 +42,21 @@ import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdapter.ViewHolder> {
     private final Context context;
     private final SharedPreferences silencedAppsPrefs;
     private final SharedPreferences importantSendersPrefs;
-    private List<JSONObject> notifications = new ArrayList<>();
+    private ArrayList<JSONObject> notifications = new ArrayList<>();
 
-    // The constructor now just sets up an empty list
     public NotificationsAdapter(Context context) {
         this.context = context;
         silencedAppsPrefs = context.getSharedPreferences(SILENCED_APPS_PREFS, Context.MODE_PRIVATE);
         importantSendersPrefs = context.getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
     }
 
-    // Add this new method to update the data
-    public void updateData(List<JSONObject> newNotifications) {
+    public void updateData(ArrayList<JSONObject> newNotifications) {
         this.notifications = newNotifications;
         notifyDataSetChanged(); // Tell the RecyclerView to refresh
     }
@@ -101,7 +98,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                 holder.tvTime.setText(sdf.format(date));
             } else if (IsYesterday(date)) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
-                holder.tvTime.setText(String.format("Yesterday %s", sdf.format(date)));
+                holder.tvTime.setText(context.getString(R.string.yesterday, sdf.format(date)));
             } else {
                 SimpleDateFormat sdf = new SimpleDateFormat("dd/MMMM/yyyy h:mm a", Locale.getDefault());
                 holder.tvTime.setText(sdf.format(date));
