@@ -145,9 +145,6 @@ public class NotificationService extends NotificationListenerService {
             if (postNotification)
                 postSilencedNotification(json, smallIcon, largeIconBitmap[0]);
 
-            // notify MainActivity for onResume
-            MainActivity.REFRESH_CONTENT_ON_RESUME = true;
-
             Log.d("NotificationService", "Notification processed: " + json);
         });
     }

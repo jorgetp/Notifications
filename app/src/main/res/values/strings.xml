@@ -5,7 +5,7 @@
     <string name="enable_as_nsl_summary">Allow this app to access and control your device\'s standard notifications</string>
     <string name="post_silenced_notifications_summary">When a notification is silenced, notify with this app</string>
     <string name="enable_as_nsl">Enable as notification service</string>
-    <string name="nsl_not_enabled">Notifications service is not enabled, please enable in settings.</string>
+    <string name="nsl_not_enabled">Not listening for notifications</string>
     <string name="menu_clear_all_except_today">Clear all except today</string>
     <string name="menu_clear_all_except_today_confirmation">Are you sure you want to clear all notifications except today?</string>
     <string name="go_to_app">Go to app</string>

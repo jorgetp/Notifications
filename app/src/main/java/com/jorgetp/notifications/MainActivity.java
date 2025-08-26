@@ -1,7 +1,5 @@
 package com.jorgetp.notifications;
 
-import static com.jorgetp.notifications.SettingsActivity.IsNotificationServiceEnabled;
-
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -59,7 +57,11 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 
-    public static boolean REFRESH_CONTENT_ON_RESUME;
+    private int lastNotificationsCountInPrefs;
+    private SharedPreferences notificationsPrefs;
+    private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
+
+    private String selectedPackage = "all";
 
     private RecyclerView rvNotifications;
     private RecyclerView rvFilter;
@@ -108,7 +110,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         return interruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE ||
                 interruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS ||
                 interruptionFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY;
-
     }
 
     @Override
@@ -122,7 +123,39 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             return insets;
         });
 
-        if (IsNotificationServiceEnabled(this)) {
+        notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
+        notificationsListener = (sharedPreferences, key) -> refreshContent();
+
+        rvNotifications = findViewById(R.id.rvNotifications);
+        rvFilter = findViewById(R.id.rvFilter);
+        setupNotificationsView();
+        refreshContent();
+
+        FloatingActionButton fabRefresh = findViewById(R.id.fabRefresh);
+        fabRefresh.setOnClickListener(view -> {
+            onAppFilterClick("all", 0);
+            //refreshContent();
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // to refresh UI on new notifications when app was paused
+        int newCount = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE)
+                .getAll().size();
+        if (newCount != lastNotificationsCountInPrefs) {
+            refreshContent();
+            lastNotificationsCountInPrefs = newCount;
+        }
+
+        // to refresh UI on new notifications when app is active
+        notificationsPrefs.registerOnSharedPreferenceChangeListener(notificationsListener);
+
+        // check if enabled as NSL
+        boolean enabledAsNSL = getSharedPreferences(SETTINGS_PREFS, Context.MODE_PRIVATE)
+                .getBoolean("enable_as_nsl", false);
+        if (enabledAsNSL) {
             NotificationManager notificationManager = (NotificationManager) getSystemService(
                     Context.NOTIFICATION_SERVICE);
             NotificationChannel channel = new NotificationChannel(
@@ -130,25 +163,16 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                     getString(R.string.app_name),
                     NotificationManager.IMPORTANCE_HIGH);
             notificationManager.createNotificationChannel(channel);
+
         } else
             Toast.makeText(this, R.string.nsl_not_enabled, Toast.LENGTH_SHORT).show();
-
-        rvNotifications = findViewById(R.id.rvNotifications);
-        rvFilter = findViewById(R.id.rvFilter);
-        setupNotificationsView();
-        refreshContent("all");
-
-        FloatingActionButton fabRefresh = findViewById(R.id.fabRefresh);
-        fabRefresh.setOnClickListener(view -> refreshContent("all"));
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (REFRESH_CONTENT_ON_RESUME) {
-            refreshContent("all");
-            REFRESH_CONTENT_ON_RESUME = false;
-        }
+    protected void onPause() {
+        super.onPause();
+        // unregister listener
+        notificationsPrefs.unregisterOnSharedPreferenceChangeListener(notificationsListener);
     }
 
     @SuppressLint("RestrictedApi")
@@ -166,8 +190,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        SharedPreferences notificationPrefs = getSharedPreferences(NOTIFICATIONS_PREFS,
-                Context.MODE_PRIVATE);
         SharedPreferences importantSendersPrefs = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
                 Context.MODE_PRIVATE);
 
@@ -176,26 +198,26 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_clear_all_except_today_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                        for (Map.Entry<String, ?> entry : notificationPrefs.getAll().entrySet()) {
+                        for (Map.Entry<String, ?> entry : notificationsPrefs.getAll().entrySet()) {
                             try {
                                 JSONObject notification = new JSONObject(entry.getValue().toString());
                                 long postTime = notification.optLong("postTime");
                                 Date date = ToDate(postTime);
                                 if (!IsToday(date)) {
-                                    notificationPrefs.edit().remove(entry.getKey()).apply();
+                                    notificationsPrefs.edit().remove(entry.getKey()).apply();
                                 }
                             } catch (JSONException e) {
                                 Log.e("MainActivity", "JSON error", e);
                             }
                         }
-                        refreshContent("all");
+                        onAppFilterClick("all", 0);
 
                         // asynchronously delete all icons whose UUID is not linked to
                         // (a) an important sender and (b) a still-stored notification
                         Executors.newSingleThreadExecutor().execute(() -> {
                             // get active UUIDs
                             HashSet<String> activeUUIDs = new HashSet<>(10);
-                            for (Object n : notificationPrefs.getAll().values()) {
+                            for (Object n : notificationsPrefs.getAll().values()) {
                                 try {
                                     JSONObject notification = new JSONObject(n.toString());
                                     activeUUIDs.add(notification.optString("uuid"));
@@ -246,15 +268,15 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         return false;
     }
 
-    public void refreshContent(String packageName) {
+    public void refreshContent() {
         Executors.newSingleThreadExecutor().execute(() -> {
             // Runs in the background
             List<JSONObject> selectedNotifications;
-            if ("all".equals(packageName)) {
+            if ("all".equals(selectedPackage)) {
                 allNotifications = loadAllNotifications();
                 selectedNotifications = allNotifications.notifications;
             } else
-                selectedNotifications = filteredNotifications(packageName);
+                selectedNotifications = filteredNotifications(selectedPackage);
 
             // Switch back to the main thread to update the UI
             List<JSONObject> finalSelectedNotifications = selectedNotifications;
@@ -262,10 +284,10 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                 notificationsAdapter.updateData(finalSelectedNotifications);
                 rvNotifications.smoothScrollToPosition(0);
 
-                if ("all".equals(packageName))
+                if ("all".equals(selectedPackage))
                     setupFilterView();
 
-                if ("all".equals(packageName) && IsInDndMode(this))
+                if ("all".equals(selectedPackage) && IsInDndMode(this))
                     Toast.makeText(this, R.string.in_dnd_mode, Toast.LENGTH_SHORT).show();
             });
         });
@@ -286,13 +308,12 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
 
     @Override
     public void onAppFilterClick(String packageName, int position) {
-        refreshContent(packageName);
+        selectedPackage = packageName;
+        refreshContent();
         filterAdapter.setSelectedPosition(position);
     }
 
     private AllNotifications loadAllNotifications() {
-        SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-
         ArrayList<JSONObject> notifications = new ArrayList<>(10);
         HashMap<String, Integer> counts = new HashMap<>();
         int totalCount = 0;

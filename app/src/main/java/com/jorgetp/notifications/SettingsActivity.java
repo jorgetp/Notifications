@@ -20,7 +20,7 @@ import androidx.preference.SwitchPreference;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    public static boolean IsNotificationServiceEnabled(Context context) {
+    private static boolean isNotificationServiceEnabled(Context context) {
         String pkgName = context.getPackageName();
         String enabledListeners = Settings.Secure.getString(context.getContentResolver(),
                 "enabled_notification_listeners");
@@ -68,12 +68,20 @@ public class SettingsActivity extends AppCompatActivity {
 
             SwitchPreference switchPreference = findPreference("enable_as_nsl");
             if (switchPreference != null) {
-                switchPreference.setChecked(IsNotificationServiceEnabled(getActivity()));
                 switchPreference.setOnPreferenceChangeListener((preference, newValue) -> {
                     Intent intent = new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS");
                     startActivity(intent);
                     return true;
                 });
+            }
+        }
+
+        @Override
+        public void onResume() {
+            super.onResume();
+            SwitchPreference switchPreference = findPreference("enable_as_nsl");
+            if (switchPreference != null) {
+                switchPreference.setChecked(isNotificationServiceEnabled(getActivity()));
             }
         }
     }
