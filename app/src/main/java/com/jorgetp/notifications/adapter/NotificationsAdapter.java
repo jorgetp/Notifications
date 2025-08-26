@@ -58,7 +58,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
     public void updateData(ArrayList<JSONObject> newNotifications) {
         this.notifications = newNotifications;
-        notifyDataSetChanged(); // Tell the RecyclerView to refresh
+        notifyDataSetChanged();
     }
 
     @Override

@@ -3,7 +3,6 @@ package com.jorgetp.notifications;
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
-import static com.jorgetp.notifications.MainActivity.IsInDndMode;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.NOTIFICATIONS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
@@ -63,6 +62,12 @@ public class NotificationService extends NotificationListenerService {
                 }
             });
         }
+    }
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
     private void processNotification(StatusBarNotification sbn, boolean isSilenced) {
@@ -195,8 +200,25 @@ public class NotificationService extends NotificationListenerService {
         return (hour >= 8 && hour <= 16) || (hour == 17 && minute <= 30);
     }
 
+    public boolean isInDndMode() {
+        // Check if the device is running Android 12 or higher
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
+            return false;
+        }
+
+        if (manager == null) {
+            return false;
+        }
+
+        // Check the current interruption filter
+        int interruptionFilter = manager.getCurrentInterruptionFilter();
+        return interruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE ||
+                interruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS ||
+                interruptionFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY;
+    }
+
     private boolean isSilentNotification(StatusBarNotification sbn) {
-        if (IsInDndMode(this))
+        if (isInDndMode())
             return !isImportantNotification(sbn);
 
         switch (getSharedPreferences(SILENCED_APPS_PREFS,
@@ -211,9 +233,6 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void postSilencedNotification(JSONObject notification, Icon smallIcon, Bitmap largeIcon) {
-        if (manager == null)
-            manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-
         String packageName = notification.optString("package");
         String title = notification.optString("title");
         String text = notification.optString("text");

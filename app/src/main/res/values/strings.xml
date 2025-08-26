@@ -18,11 +18,11 @@
     <string name="important_senders">Important senders</string>
     <string name="yesterday">Yesterday %s</string>
     <string name="all">" All "</string>
-    <string name="in_dnd_mode">In DND mode</string>
     <string name="pop_out">Pop out</string>
     <string name="unset_as_important_confirmation">Are you sure you want to unset sender as important?</string>
     <string name="settings">Settings</string>
     <string name="copied_title">Copied title</string>
     <string name="copied_text">Copied text</string>
     <string name="silenced_notification">%s (silenced)</string>
+    <string name="notifications_list_updated">Updated list of notifications</string>
 </resources>

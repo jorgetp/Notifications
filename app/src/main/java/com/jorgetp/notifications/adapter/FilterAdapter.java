@@ -21,17 +21,17 @@ import java.util.Map;
 public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder> {
     private final Context context;
     private final List<Map.Entry<String, Integer>> counts;
-    private final OnAppFilterClickListener onAppFilterClickListener;
+    private final OnFilterSelectedListener onFilterSelectedListener;
     private int selectedPosition = 0;
 
-    public FilterAdapter(Context context, List<Map.Entry<String, Integer>> counts, OnAppFilterClickListener onAppFilterClickListener) {
+    public FilterAdapter(Context context, List<Map.Entry<String, Integer>> counts, OnFilterSelectedListener onFilterSelectedListener) {
         this.context = context;
         if (counts == null || counts.isEmpty()) {
             this.counts = List.of(Map.entry("all", 0));
         } else {
             this.counts = counts;
         }
-        this.onAppFilterClickListener = onAppFilterClickListener;
+        this.onFilterSelectedListener = onFilterSelectedListener;
     }
 
     @NonNull
@@ -48,7 +48,7 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
 
         holder.itemView.setSelected(selectedPosition == position);
 
-        if ("all".equals(packageName)) {
+        if (position == 0) {
             holder.ivIcon.setVisibility(View.GONE);
             holder.tvApp.setText(R.string.all);
         } else {
@@ -68,8 +68,8 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
         }
 
         holder.itemView.setOnClickListener(v -> {
-            if (onAppFilterClickListener != null) {
-                onAppFilterClickListener.onAppFilterClick(packageName, holder.getAdapterPosition());
+            if (onFilterSelectedListener != null) {
+                onFilterSelectedListener.onFilterSelected(packageName, holder.getAdapterPosition());
             }
         });
     }
@@ -86,8 +86,8 @@ public class FilterAdapter extends RecyclerView.Adapter<FilterAdapter.ViewHolder
         notifyItemChanged(selectedPosition);
     }
 
-    public interface OnAppFilterClickListener {
-        void onAppFilterClick(String packageName, int position);
+    public interface OnFilterSelectedListener {
+        void onFilterSelected(String packageName, int position);
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {

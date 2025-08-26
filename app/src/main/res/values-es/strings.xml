@@ -18,11 +18,11 @@
     <string name="important_senders">Remitentes importantes</string>
     <string name="yesterday">Ayer %s</string>
     <string name="all">Todo</string>
-    <string name="in_dnd_mode">En modo No Molestar</string>
     <string name="pop_out">Resaltar</string>
     <string name="unset_as_important_confirmation">¿Estás seguro de que deseas desmarcar al remitente como importante?</string>
     <string name="settings">Configuración</string>
     <string name="copied_title">Remitente copiado</string>
     <string name="copied_text">Mensaje copiado</string>
     <string name="silenced_notification">%s (silenciada)</string>
+    <string name="notifications_list_updated">Lista de notificaciones actualizada</string>
 </resources>

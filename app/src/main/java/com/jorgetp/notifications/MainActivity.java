@@ -14,7 +14,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -51,7 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity implements FilterAdapter.OnAppFilterClickListener {
+public class MainActivity extends AppCompatActivity implements FilterAdapter.OnFilterSelectedListener {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
     public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
@@ -88,29 +87,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate yesterday = LocalDate.now().minusDays(1);
         return givenDate.equals(yesterday);
-    }
-
-    public static boolean IsInDndMode(Context context) {
-        if (context == null) {
-            return false;
-        }
-
-        // Check if the device is running Android 12 or higher
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) {
-            return false;
-        }
-
-        NotificationManager notificationManager = (NotificationManager) context
-                .getSystemService(Context.NOTIFICATION_SERVICE);
-        if (notificationManager == null) {
-            return false;
-        }
-
-        // Check the current interruption filter
-        int interruptionFilter = notificationManager.getCurrentInterruptionFilter();
-        return interruptionFilter == NotificationManager.INTERRUPTION_FILTER_NONE ||
-                interruptionFilter == NotificationManager.INTERRUPTION_FILTER_ALARMS ||
-                interruptionFilter == NotificationManager.INTERRUPTION_FILTER_PRIORITY;
     }
 
     private boolean isNotificationServiceEnabled() {
@@ -163,17 +139,17 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         }
 
         notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-        notificationsListener = (sharedPreferences, key) -> refreshContent(true);
+        notificationsListener = (sharedPreferences, key) -> {
+            refreshContent(true);
+        };
 
         rvNotifications = findViewById(R.id.rvNotifications);
         rvFilter = findViewById(R.id.rvFilter);
         setupNotificationsView();
         refreshContent(true);
 
-        FloatingActionButton fabScrollToTop = findViewById(R.id.fabScroll);
-        fabScrollToTop.setOnClickListener(view -> {
-            rvNotifications.smoothScrollToPosition(0);
-        });
+        FloatingActionButton fabScroll = findViewById(R.id.fabScroll);
+        fabScroll.setOnClickListener(view -> rvNotifications.smoothScrollToPosition(0));
     }
 
     @Override
@@ -232,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                                 Log.e("MainActivity", "JSON error", e);
                             }
                         }
-                        onAppFilterClick("all", 0);
+                        onFilterSelected("all", 0);
                         rvNotifications.smoothScrollToPosition(0);
 
                         // asynchronously delete all icons whose UUID is not linked to
@@ -295,12 +271,8 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
             ArrayList<JSONObject> filteredNotifications = filterNotifications();
             runOnUiThread(() -> {
                 notificationsAdapter.updateData(filteredNotifications);
-
-                if ("all".equals(selectedPackage)) {
+                if ("all".equals(selectedPackage))
                     setupFilterView();
-                    if (IsInDndMode(this))
-                        Toast.makeText(this, R.string.in_dnd_mode, Toast.LENGTH_SHORT).show();
-                }
             });
         });
     }
@@ -319,7 +291,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     }
 
     @Override
-    public void onAppFilterClick(String packageName, int position) {
+    public void onFilterSelected(String packageName, int position) {
         selectedPackage = packageName;
         filterAdapter.setSelectedPosition(position);
         refreshContent(position == 0);
