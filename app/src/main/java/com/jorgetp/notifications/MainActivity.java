@@ -61,13 +61,12 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     private SharedPreferences notificationsPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
 
-    private String selectedPackage = "all";
-
     private RecyclerView rvNotifications;
     private RecyclerView rvFilter;
     private FilterAdapter filterAdapter;
     private NotificationsAdapter notificationsAdapter;
     private AllNotifications allNotifications;
+    private String selectedPackage = "all";
 
     public static Date ToDate(long timestamp) {
         try {
@@ -124,17 +123,16 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         });
 
         notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-        notificationsListener = (sharedPreferences, key) -> refreshContent();
+        notificationsListener = (sharedPreferences, key) -> refreshContent(true);
 
         rvNotifications = findViewById(R.id.rvNotifications);
         rvFilter = findViewById(R.id.rvFilter);
         setupNotificationsView();
-        refreshContent();
+        refreshContent(true);
 
         FloatingActionButton fabRefresh = findViewById(R.id.fabRefresh);
         fabRefresh.setOnClickListener(view -> {
             onAppFilterClick("all", 0);
-            //refreshContent();
         });
     }
 
@@ -145,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         int newCount = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE)
                 .getAll().size();
         if (newCount != lastNotificationsCountInPrefs) {
-            refreshContent();
+            refreshContent(true);
             lastNotificationsCountInPrefs = newCount;
         }
 
@@ -268,20 +266,13 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         return false;
     }
 
-    public void refreshContent() {
+    public void refreshContent(boolean loadAll) {
         Executors.newSingleThreadExecutor().execute(() -> {
-            // Runs in the background
-            List<JSONObject> selectedNotifications;
-            if ("all".equals(selectedPackage)) {
-                allNotifications = loadAllNotifications();
-                selectedNotifications = allNotifications.notifications;
-            } else
-                selectedNotifications = filteredNotifications(selectedPackage);
-
-            // Switch back to the main thread to update the UI
-            List<JSONObject> finalSelectedNotifications = selectedNotifications;
+            if (loadAll)
+                loadAllNotifications();
+            List<JSONObject> filteredNotifications = filterNotifications();
             runOnUiThread(() -> {
-                notificationsAdapter.updateData(finalSelectedNotifications);
+                notificationsAdapter.updateData(filteredNotifications);
                 rvNotifications.smoothScrollToPosition(0);
 
                 if ("all".equals(selectedPackage))
@@ -309,11 +300,11 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     @Override
     public void onAppFilterClick(String packageName, int position) {
         selectedPackage = packageName;
-        refreshContent();
         filterAdapter.setSelectedPosition(position);
+        refreshContent(position == 0);
     }
 
-    private AllNotifications loadAllNotifications() {
+    private void loadAllNotifications() {
         ArrayList<JSONObject> notifications = new ArrayList<>(10);
         HashMap<String, Integer> counts = new HashMap<>();
         int totalCount = 0;
@@ -350,14 +341,17 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
         // Add "all" filter at the beginning
         packageCounts.add(0, new AbstractMap.SimpleEntry<>("all", totalCount));
 
-        return new AllNotifications(notifications, packageCounts);
+        allNotifications = new AllNotifications(notifications, packageCounts);
     }
 
-    private List<JSONObject> filteredNotifications(String filterPackage) {
+    private List<JSONObject> filterNotifications() {
         List<JSONObject> selectedNotifications = new ArrayList<>();
+        if ("all".equals(selectedPackage))
+            return allNotifications.notifications;
+
         for (JSONObject notification : allNotifications.notifications) {
             try {
-                if (notification.getString("package").equals(filterPackage)) {
+                if (notification.getString("package").equals(selectedPackage)) {
                     selectedNotifications.add(notification);
                 }
             } catch (JSONException e) {
