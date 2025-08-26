@@ -233,7 +233,8 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
                                 Log.e("MainActivity", "JSON error", e);
                             }
                         }
-                        refreshContent(true);
+                        onAppFilterClick("all", 0);
+                        rvNotifications.smoothScrollToPosition(0);
 
                         // asynchronously delete all icons whose UUID is not linked to
                         // (a) an important sender and (b) a still-stored notification
