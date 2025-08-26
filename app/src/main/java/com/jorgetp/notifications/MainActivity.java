@@ -180,8 +180,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnA
     protected void onResume() {
         super.onResume();
         // to refresh UI on new notifications when app was paused
-        int newCount = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE)
-                .getAll().size();
+        int newCount = notificationsPrefs.getAll().size();
         if (newCount != lastNotificationsCountInPrefs) {
             refreshContent(true);
             lastNotificationsCountInPrefs = newCount;
