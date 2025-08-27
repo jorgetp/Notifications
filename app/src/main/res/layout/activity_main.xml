@@ -7,24 +7,25 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvFilter"
+    <Spinner
+        android:id="@+id/spSelector"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/normal"
-        android:orientation="horizontal"
-        app:layout_constraintBottom_toTopOf="@id/rvNotifications"
+        android:layout_marginStart="@dimen/sm"
+        android:layout_marginTop="@dimen/xs"
+        android:layout_marginEnd="@dimen/sm"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvNotifications"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginTop="@dimen/xs"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rvFilter" />
+        app:layout_constraintTop_toBottomOf="@id/spSelector" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

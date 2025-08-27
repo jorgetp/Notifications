@@ -7,6 +7,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
@@ -14,6 +15,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Spinner;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -27,7 +32,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jorgetp.notifications.adapter.FilterAdapter;
 import com.jorgetp.notifications.adapter.ImportantSendersAdapter;
 import com.jorgetp.notifications.adapter.NotificationsAdapter;
 import com.jorgetp.notifications.adapter.SilencedAppsAdapter;
@@ -49,7 +53,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 
-public class MainActivity extends AppCompatActivity implements FilterAdapter.OnFilterSelectedListener {
+public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
     public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
@@ -62,11 +66,10 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
     private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
 
     private RecyclerView rvNotifications;
-    private RecyclerView rvFilter;
-    private FilterAdapter filterAdapter;
     private NotificationsAdapter notificationsAdapter;
     private AllNotifications allNotifications;
     private String selectedPackage = "all";
+    private Spinner spSelector;
 
     public static Date ToDate(long timestamp) {
         try {
@@ -143,7 +146,8 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
         };
 
         rvNotifications = findViewById(R.id.rvNotifications);
-        rvFilter = findViewById(R.id.rvFilter);
+        spSelector = findViewById(R.id.spSelector);
+
         setupNotificationsView();
         refreshContent(true);
     }
@@ -204,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
                                 Log.e("MainActivity", "JSON error", e);
                             }
                         }
-                        onFilterSelected("all", 0);
+                        refreshContent(true);
 
                         // asynchronously delete all icons whose UUID is not linked to
                         // (a) an important sender and (b) a still-stored notification
@@ -261,21 +265,62 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
 
     public void refreshContent(boolean loadAll) {
         Executors.newSingleThreadExecutor().execute(() -> {
-            if (loadAll)
+            String[] packageNames = null;
+            String[] items = null;
+
+            if (loadAll) {
                 loadAllNotifications();
+
+                packageNames = new String[allNotifications.packageCounts.size()];
+                items = new String[allNotifications.packageCounts.size()];
+
+                for (int i = 0; i < allNotifications.packageCounts.size(); i++) {
+                    packageNames[i] = allNotifications.packageCounts.get(i).getKey();
+                    int count = allNotifications.packageCounts.get(i).getValue();
+                    String appName = i == 0 ? getString(R.string.all) : packageNames[i];
+                    try {
+                        ApplicationInfo appInfo = getPackageManager().getApplicationInfo(packageNames[i], 0);
+                        appName = getPackageManager().getApplicationLabel(appInfo).toString();
+                    } catch (Exception e) {
+                        Log.e("MainActivity", "App not found", e);
+                    }
+
+                    items[i] = appName + " (" + count + ")";
+                }
+            }
+
+            String[] packageNamesFinal = packageNames;
+            String[] itemsFinal = items;
+
             ArrayList<JSONObject> filteredNotifications = filterNotifications();
             runOnUiThread(() -> {
                 notificationsAdapter.updateData(filteredNotifications);
-                if ("all".equals(selectedPackage))
-                    setupFilterView();
+                if (itemsFinal != null) {
+                    ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                            this,
+                            android.R.layout.simple_list_item_1,
+                            itemsFinal
+                    );
+
+                    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                    spSelector.setAdapter(adapter);
+
+                    // Handle selection
+                    spSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            selectedPackage = packageNamesFinal[position];
+                            refreshContent(false);
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+                            // Do nothing
+                        }
+                    });
+                }
             });
         });
-    }
-
-    private void setupFilterView() {
-        filterAdapter = new FilterAdapter(this, allNotifications.packageCounts, this);
-        rvFilter.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
-        rvFilter.setAdapter(filterAdapter);
     }
 
     private void setupNotificationsView() {
@@ -283,13 +328,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
         rvNotifications.setLayoutManager(lm);
         notificationsAdapter = new NotificationsAdapter(this);
         rvNotifications.setAdapter(notificationsAdapter);
-    }
-
-    @Override
-    public void onFilterSelected(String packageName, int position) {
-        selectedPackage = packageName;
-        filterAdapter.setSelectedPosition(position);
-        refreshContent(position == 0);
     }
 
     private void loadAllNotifications() {
