@@ -27,7 +27,6 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jorgetp.notifications.adapter.FilterAdapter;
 import com.jorgetp.notifications.adapter.ImportantSendersAdapter;
 import com.jorgetp.notifications.adapter.NotificationsAdapter;
@@ -147,9 +146,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
         rvFilter = findViewById(R.id.rvFilter);
         setupNotificationsView();
         refreshContent(true);
-
-        FloatingActionButton fabScroll = findViewById(R.id.fabScroll);
-        fabScroll.setOnClickListener(view -> rvNotifications.smoothScrollToPosition(0));
     }
 
     @Override
@@ -209,7 +205,6 @@ public class MainActivity extends AppCompatActivity implements FilterAdapter.OnF
                             }
                         }
                         onFilterSelected("all", 0);
-                        rvNotifications.smoothScrollToPosition(0);
 
                         // asynchronously delete all icons whose UUID is not linked to
                         // (a) an important sender and (b) a still-stored notification
