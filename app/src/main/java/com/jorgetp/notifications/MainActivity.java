@@ -285,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.e("MainActivity", "App not found", e);
                     }
 
-                    items[i] = appName + " (" + count + ")";
+                    items[i] = "  " + appName + " (" + count + ")";
                 }
             }
 
@@ -294,7 +294,9 @@ public class MainActivity extends AppCompatActivity {
 
             ArrayList<JSONObject> filteredNotifications = filterNotifications();
             runOnUiThread(() -> {
+                //if (!loadAll || "all".equals(selectedPackage))
                 notificationsAdapter.updateData(filteredNotifications);
+
                 if (itemsFinal != null) {
                     ArrayAdapter<String> adapter = new ArrayAdapter<>(
                             this,

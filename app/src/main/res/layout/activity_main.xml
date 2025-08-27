@@ -9,12 +9,9 @@
 
     <Spinner
         android:id="@+id/spSelector"
-        android:layout_width="0dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/sm"
         android:layout_marginTop="@dimen/xs"
-        android:layout_marginEnd="@dimen/sm"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
