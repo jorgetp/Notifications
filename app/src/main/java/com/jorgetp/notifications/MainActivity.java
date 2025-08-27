@@ -45,7 +45,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -268,23 +268,21 @@ public class MainActivity extends AppCompatActivity {
         Executors.newSingleThreadExecutor().execute(() -> {
             loadAllNotifications();
 
-            String[] items = new String[allNotifications.packages.size()];
+            String[] selectors = new String[allNotifications.packages.size()];
             for (int i = 0; i < allNotifications.packages.size(); i++)
-                items[i] = "  " + allNotifications.packages.get(i).getValue();
+                selectors[i] = "  " + allNotifications.packages.get(i).getValue() + "  ";
+
+            int currentPosition = allNotifications.positions.getOrDefault(selectedPackage, 0);
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                    android.R.layout.simple_spinner_dropdown_item, selectors);
 
             runOnUiThread(() -> {
-                int currentPosition = allNotifications.positions.getOrDefault(selectedPackage, 0);
-                ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                        this,
-                        android.R.layout.simple_list_item_1,
-                        items
-                );
                 adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
                 spSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
                     @Override
                     public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                         selectedPackage = allNotifications.packages.get(position).getKey();
-                        refreshNotificationsAdapter();
+                        refreshNotificationsView();
                     }
 
                     @Override
@@ -305,23 +303,26 @@ public class MainActivity extends AppCompatActivity {
         rvNotifications.setAdapter(notificationsAdapter);
     }
 
-    private void refreshNotificationsAdapter() {
-        ArrayList<JSONObject> selectedNotifications = null;
-        if ("all".equals(selectedPackage))
-            selectedNotifications = allNotifications.notifications;
-        else {
-            selectedNotifications = new ArrayList<>(10);
-            for (JSONObject notification : allNotifications.notifications) {
-                try {
-                    if (notification.getString("package").equals(selectedPackage)) {
-                        selectedNotifications.add(notification);
+    private void refreshNotificationsView() {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            ArrayList<JSONObject> selectedNotifications;
+            if ("all".equals(selectedPackage))
+                selectedNotifications = allNotifications.notifications;
+            else {
+                selectedNotifications = new ArrayList<>(10);
+                for (JSONObject notification : allNotifications.notifications) {
+                    try {
+                        if (notification.getString("package").equals(selectedPackage)) {
+                            selectedNotifications.add(notification);
+                        }
+                    } catch (JSONException e) {
+                        Log.e("NotificationsAdapter", "JSON error", e);
                     }
-                } catch (JSONException e) {
-                    Log.e("NotificationsAdapter", "JSON error", e);
                 }
             }
-        }
-        notificationsAdapter.updateData(selectedNotifications);
+            ArrayList<JSONObject> selectedNotificationsFinal = selectedNotifications;
+            runOnUiThread(() -> notificationsAdapter.updateData(selectedNotificationsFinal));
+        });
     }
 
     private void loadAllNotifications() {
@@ -362,9 +363,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // create sorted list of packages
+        // Create sorted list of packages
         List<Map.Entry<String, String>> packages = new ArrayList<>(packagesMap.entrySet());
-        Collections.sort(packages, (o1, o2) -> o2.getValue().compareTo(o1.getValue()));
+        packages.sort(Comparator.comparing(o -> o.getValue().toLowerCase()));
         // Add "all" filter at the beginning
         packages.add(0, new AbstractMap.SimpleEntry<>("all", getString(R.string.all)));
 
