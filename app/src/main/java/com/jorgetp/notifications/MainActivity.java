@@ -187,19 +187,30 @@ public class MainActivity extends AppCompatActivity {
 
         int itemId = item.getItemId();
         if (itemId == R.id.menu_filter) {
-            // add a popup menu with the app names as filters
-            PopupMenu popup = new PopupMenu(this, findViewById(R.id.menu_filter));
-            for (int i = 0; i < allNotifications.packages.size(); i++)
-                popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, allNotifications.packages.get(i).getValue());
+            Executors.newSingleThreadExecutor().execute(() -> {
+                // add a popup menu with the app names as filters
+                // first make a copy of allNotifications.packages to avoid concurrent modification
+                ArrayList<Map.Entry<String, String>> packages = new ArrayList<>(allNotifications.packages);
+                for (int i = 0; i < allNotifications.packages.size(); i++)
+                    packages.set(i, new AbstractMap.SimpleEntry<>(
+                            allNotifications.packages.get(i).getKey(),
+                            allNotifications.packages.get(i).getValue()));
 
-            popup.setOnMenuItemClickListener(menuItem -> {
-                int position = menuItem.getItemId() - 54321;
-                selectedPackage = allNotifications.packages.get(position).getKey();
-                item.setTitle(allNotifications.packages.get(position).getValue());
-                refreshNotificationsView();
-                return true;
+                runOnUiThread(() -> {
+                    PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
+                    for (int i = 0; i < packages.size(); i++)
+                        popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, packages.get(i).getValue());
+
+                    popup.setOnMenuItemClickListener(menuItem -> {
+                        int position = menuItem.getItemId() - 54321;
+                        selectedPackage = packages.get(position).getKey();
+                        item.setTitle(packages.get(position).getValue());
+                        refreshNotificationsView();
+                        return true;
+                    });
+                    popup.show();
+                });
             });
-            popup.show();
             return true;
 
         } else if (itemId == R.id.menu_clear_all_except_today) {
@@ -349,24 +360,17 @@ public class MainActivity extends AppCompatActivity {
         // Add "all" filter at the beginning
         packages.add(0, new AbstractMap.SimpleEntry<>("all", getString(R.string.all)));
 
-        HashMap<String, Integer> positions = new HashMap<>();
-        for (int i = 0; i < packages.size(); i++)
-            positions.put(packages.get(i).getKey(), i);
-
-        allNotifications = new AllNotifications(notifications, packages, positions);
+        allNotifications = new AllNotifications(notifications, packages);
     }
 
     private static class AllNotifications {
         private final ArrayList<JSONObject> notifications;
         private final List<Map.Entry<String, String>> packages;
-        private final HashMap<String, Integer> positions;
 
         public AllNotifications(ArrayList<JSONObject> notifications,
-                                List<Map.Entry<String, String>> packages,
-                                HashMap<String, Integer> positions) {
+                                List<Map.Entry<String, String>> packages) {
             this.notifications = notifications;
             this.packages = packages;
-            this.positions = positions;
         }
     }
 }
