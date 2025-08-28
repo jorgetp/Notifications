@@ -17,7 +17,7 @@
     <string name="unset_as_important">Unset as important</string>
     <string name="important_senders">Important senders</string>
     <string name="yesterday">Yesterday %s</string>
-    <string name="all">All apps</string>
+    <string name="all">All</string>
     <string name="pop_out">Pop out</string>
     <string name="unset_as_important_confirmation">Are you sure you want to unset sender as important?</string>
     <string name="settings">Settings</string>
