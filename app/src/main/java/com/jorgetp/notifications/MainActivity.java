@@ -16,10 +16,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Spinner;
+import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
@@ -66,11 +63,9 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences notificationsPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
 
-    private RecyclerView rvNotifications;
     private NotificationsAdapter notificationsAdapter;
     private AllNotifications allNotifications;
     private String selectedPackage = "all";
-    private Spinner spSelector;
 
     public static Date ToDate(long timestamp) {
         try {
@@ -108,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -141,16 +135,15 @@ public class MainActivity extends AppCompatActivity {
             dialogBuilder.create().show();
         }
 
+        RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
+        LinearLayoutManager lm = new LinearLayoutManager(this);
+        rvNotifications.setLayoutManager(lm);
+        rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
+
         notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
         notificationsListener = (sharedPreferences, key) -> {
             refreshDataAndUI();
         };
-
-        rvNotifications = findViewById(R.id.rvNotifications);
-        spSelector = findViewById(R.id.spSelector);
-
-        setupNotificationsView();
-        //refreshContent();
     }
 
     @Override
@@ -193,7 +186,23 @@ public class MainActivity extends AppCompatActivity {
                 Context.MODE_PRIVATE);
 
         int itemId = item.getItemId();
-        if (itemId == R.id.menu_clear_all_except_today) {
+        if (itemId == R.id.menu_filter) {
+            // add a popup menu with the app names as filters
+            PopupMenu popup = new PopupMenu(this, findViewById(R.id.menu_filter));
+            for (int i = 0; i < allNotifications.packages.size(); i++)
+                popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, allNotifications.packages.get(i).getValue());
+
+            popup.setOnMenuItemClickListener(menuItem -> {
+                int position = menuItem.getItemId() - 54321;
+                selectedPackage = allNotifications.packages.get(position).getKey();
+                item.setTitle(allNotifications.packages.get(position).getValue());
+                refreshNotificationsView();
+                return true;
+            });
+            popup.show();
+            return true;
+
+        } else if (itemId == R.id.menu_clear_all_except_today) {
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_clear_all_except_today_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
@@ -267,40 +276,8 @@ public class MainActivity extends AppCompatActivity {
     public void refreshDataAndUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             loadAllNotifications();
-
-            String[] selectors = new String[allNotifications.packages.size()];
-            for (int i = 0; i < allNotifications.packages.size(); i++)
-                selectors[i] = "  " + allNotifications.packages.get(i).getValue() + "  ";
-
-            int currentPosition = allNotifications.positions.getOrDefault(selectedPackage, 0);
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                    android.R.layout.simple_spinner_dropdown_item, selectors);
-
-            runOnUiThread(() -> {
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                spSelector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-                    @Override
-                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                        selectedPackage = allNotifications.packages.get(position).getKey();
-                        refreshNotificationsView();
-                    }
-
-                    @Override
-                    public void onNothingSelected(AdapterView<?> parent) {
-                        // Do nothing
-                    }
-                });
-                spSelector.setAdapter(adapter);
-                spSelector.setSelection(currentPosition);
-            });
+            runOnUiThread(() -> refreshNotificationsView());
         });
-    }
-
-    private void setupNotificationsView() {
-        LinearLayoutManager lm = new LinearLayoutManager(this);
-        rvNotifications.setLayoutManager(lm);
-        notificationsAdapter = new NotificationsAdapter(this);
-        rvNotifications.setAdapter(notificationsAdapter);
     }
 
     private void refreshNotificationsView() {
@@ -321,7 +298,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             ArrayList<JSONObject> selectedNotificationsFinal = selectedNotifications;
-            runOnUiThread(() -> notificationsAdapter.updateData(selectedNotificationsFinal));
+            runOnUiThread(() -> {
+                if (notificationsAdapter != null && selectedNotificationsFinal != null)
+                    notificationsAdapter.updateData(selectedNotificationsFinal);
+            });
         });
     }
 
