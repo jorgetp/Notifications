@@ -189,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
                 // add a popup menu with the app names as filters
-                // first make a copy of allNotifications.packages to avoid concurrent modification
+                // first make a copy of all packages to avoid concurrent modification
                 ArrayList<Map.Entry<String, String>> packages = new ArrayList<>(allNotifications.packages);
                 for (int i = 0; i < allNotifications.packages.size(); i++)
                     packages.set(i, new AbstractMap.SimpleEntry<>(
@@ -217,47 +217,57 @@ public class MainActivity extends AppCompatActivity {
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_clear_all_except_today_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                        for (Map.Entry<String, ?> entry : notificationsPrefs.getAll().entrySet()) {
-                            try {
-                                JSONObject notification = new JSONObject(entry.getValue().toString());
-                                long postTime = notification.optLong("postTime");
-                                Date date = ToDate(postTime);
-                                if (!IsToday(date)) {
-                                    notificationsPrefs.edit().remove(entry.getKey()).apply();
-                                }
-                            } catch (JSONException e) {
-                                Log.e("MainActivity", "JSON error", e);
-                            }
-                        }
-                        refreshDataAndUI();
-
-                        // asynchronously delete all icons whose UUID is not linked to
-                        // (a) an important sender and (b) a still-stored notification
                         Executors.newSingleThreadExecutor().execute(() -> {
-                            // get active UUIDs
-                            HashSet<String> activeUUIDs = new HashSet<>(10);
-                            for (Object n : notificationsPrefs.getAll().values()) {
+                            ArrayList<String> keysToDelete = new ArrayList<>(10);
+                            for (Map.Entry<String, ?> entry : notificationsPrefs.getAll().entrySet()) {
                                 try {
-                                    JSONObject notification = new JSONObject(n.toString());
-                                    activeUUIDs.add(notification.optString("uuid"));
+                                    JSONObject notification = new JSONObject(entry.getValue().toString());
+                                    long postTime = notification.optLong("postTime");
+                                    Date date = ToDate(postTime);
+                                    if (!IsToday(date)) {
+                                        keysToDelete.add(entry.getKey());
+                                    }
                                 } catch (JSONException e) {
                                     Log.e("MainActivity", "JSON error", e);
                                 }
                             }
 
-                            for (Object uuid : importantSendersPrefs.getAll().values())
-                                activeUUIDs.add(uuid.toString());
+                            if (!keysToDelete.isEmpty()) {
+                                SharedPreferences.Editor editor = notificationsPrefs.edit();
+                                for (String key : keysToDelete)
+                                    editor.remove(key);
+                                editor.apply();
 
-                            // delete files
-                            for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
-                                String fileName = file.getName();
-                                if (!fileName.startsWith("notification_icon_"))
-                                    continue;
+                                // refresh UI
+                                refreshDataAndUI();
 
-                                String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
-                                if (!activeUUIDs.contains(uuid)) {
-                                    if (file.delete())
-                                        Log.d("MainActivity", "Icon deleted: " + fileName);
+                                // delete now all icons whose UUID is not linked to
+                                // (a) an important sender and (b) a still-stored notification
+                                // get active UUIDs
+                                HashSet<String> activeUUIDs = new HashSet<>(10);
+                                for (Object n : notificationsPrefs.getAll().values()) {
+                                    try {
+                                        JSONObject notification = new JSONObject(n.toString());
+                                        activeUUIDs.add(notification.optString("uuid"));
+                                    } catch (JSONException e) {
+                                        Log.e("MainActivity", "JSON error", e);
+                                    }
+                                }
+
+                                for (Object uuid : importantSendersPrefs.getAll().values())
+                                    activeUUIDs.add(uuid.toString());
+
+                                // delete files
+                                for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
+                                    String fileName = file.getName();
+                                    if (!fileName.startsWith("notification_icon_"))
+                                        continue;
+
+                                    String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
+                                    if (!activeUUIDs.contains(uuid)) {
+                                        if (file.delete())
+                                            Log.d("MainActivity", "Icon deleted: " + fileName);
+                                    }
                                 }
                             }
                         });
@@ -287,7 +297,7 @@ public class MainActivity extends AppCompatActivity {
     public void refreshDataAndUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             loadAllNotifications();
-            runOnUiThread(() -> refreshNotificationsView());
+            runOnUiThread(this::refreshNotificationsView);
         });
     }
 
@@ -300,9 +310,9 @@ public class MainActivity extends AppCompatActivity {
                 selectedNotifications = new ArrayList<>(10);
                 for (JSONObject notification : allNotifications.notifications) {
                     try {
-                        if (notification.getString("package").equals(selectedPackage)) {
+                        if (notification.getString("package").equals(selectedPackage))
                             selectedNotifications.add(notification);
-                        }
+
                     } catch (JSONException e) {
                         Log.e("NotificationsAdapter", "JSON error", e);
                     }
