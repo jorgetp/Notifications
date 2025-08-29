@@ -101,7 +101,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
         holder.itemView.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(context, v);
-            popup.getMenuInflater().inflate(R.menu.app_popup_menu, popup.getMenu());
+            popup.getMenuInflater().inflate(R.menu.menu_app_popup, popup.getMenu());
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();

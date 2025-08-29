@@ -139,7 +139,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         // when item is clicked, show a menu with several options
         holder.itemView.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(context, v);
-            popup.getMenuInflater().inflate(R.menu.notification_popup_menu, popup.getMenu());
+            popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
             MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
             popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilencedApp);
             popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);

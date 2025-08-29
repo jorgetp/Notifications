@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Notifications</string>
     <string name="enable_as_nsl">Enable as notification service</string>
-    <string name="menu_clear_all_except_today">Clear all except today</string>
-    <string name="menu_clear_all_except_today_confirmation">Are you sure you want to clear all notifications except today?</string>
+    <string name="menu_delete_all_except_today">Delete all except today</string>
+    <string name="menu_delete_all_except_today_confirmation">Are you sure you want to delete all notifications except today?</string>
     <string name="go_to_app">Go to app</string>
     <string name="copy_title">Copy sender</string>
     <string name="copy_text">Copy message</string>

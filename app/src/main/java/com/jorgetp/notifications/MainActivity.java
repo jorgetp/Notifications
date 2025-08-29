@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 
-    private int lastNotificationsCountInPrefs;
+    private int lastNotificationsCountInPrefs = -1;
     private SharedPreferences notificationsPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
 
@@ -165,13 +165,23 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         // unregister listener
         notificationsPrefs.unregisterOnSharedPreferenceChangeListener(notificationsListener);
+
+        // close activity after 10 mins of inactivity
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                Thread.sleep(10 * 60 * 1000);
+                finishAndRemoveTask();
+            } catch (InterruptedException e) {
+                Log.e("MainActivity", "Thread interrupted", e);
+            }
+        });
     }
 
     @SuppressLint("RestrictedApi")
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_activity_menu, menu);
+        inflater.inflate(R.menu.menu_main_activity, menu);
         MenuCompat.setGroupDividerEnabled(menu, true);
         if (menu instanceof MenuBuilder) {
             MenuBuilder m = (MenuBuilder) menu;
@@ -215,7 +225,7 @@ public class MainActivity extends AppCompatActivity {
 
         } else if (itemId == R.id.menu_clear_all_except_today) {
             new AlertDialog.Builder(this)
-                    .setMessage(R.string.menu_clear_all_except_today_confirmation)
+                    .setMessage(R.string.menu_delete_all_except_today_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             ArrayList<String> keysToDelete = new ArrayList<>(10);
@@ -238,8 +248,9 @@ public class MainActivity extends AppCompatActivity {
                                     editor.remove(key);
                                 editor.apply();
 
-                                // refresh UI
-                                refreshDataAndUI();
+                                // no need to refresh notifications view because it is already
+                                // refreshed by the notificationsListener
+                                // refreshDataAndUI();
 
                                 // delete now all icons whose UUID is not linked to
                                 // (a) an important sender and (b) a still-stored notification
@@ -371,6 +382,7 @@ public class MainActivity extends AppCompatActivity {
         packages.add(0, new AbstractMap.SimpleEntry<>("all", getString(R.string.all)));
 
         allNotifications = new AllNotifications(notifications, packages);
+        Log.d("NotificationsAdapter", "All notifications loaded");
     }
 
     private static class AllNotifications {
