@@ -141,9 +141,7 @@ public class MainActivity extends AppCompatActivity {
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
 
         notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
-        notificationsListener = (sharedPreferences, key) -> {
-            refreshDataAndUI();
-        };
+        notificationsListener = (sharedPreferences, key) -> refreshDataAndUI();
     }
 
     @Override
@@ -166,11 +164,12 @@ public class MainActivity extends AppCompatActivity {
         // unregister listener
         notificationsPrefs.unregisterOnSharedPreferenceChangeListener(notificationsListener);
 
-        // close activity after 10 mins of inactivity
+        // trigger a reload after 10 mins of inactivity
         Executors.newSingleThreadExecutor().execute(() -> {
             try {
                 Thread.sleep(10 * 60 * 1000);
-                finishAndRemoveTask();
+                selectedPackage = "all";
+                lastNotificationsCountInPrefs = -1;
             } catch (InterruptedException e) {
                 Log.e("MainActivity", "Thread interrupted", e);
             }
