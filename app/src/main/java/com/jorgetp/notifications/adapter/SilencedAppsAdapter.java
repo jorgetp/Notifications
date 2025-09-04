@@ -15,7 +15,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -105,31 +104,32 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
+                int position = holder.getAdapterPosition();
                 if (itemId == R.id.silenced_always) {
                     prefs.edit().putInt(app.packageName, ALWAYS).apply();
-                    apps.set(i, new SilencedApp(app.packageName, ALWAYS));
-                    notifyItemChanged(i);
+                    apps.set(position, new SilencedApp(app.packageName, ALWAYS));
+                    notifyItemChanged(position);
 
-                    Toast.makeText(context, context.getString(R.string.silenced_always),
-                            Toast.LENGTH_SHORT).show();
+                    /*Toast.makeText(context, context.getString(R.string.silenced_always),
+                            Toast.LENGTH_SHORT).show();*/
                     return true;
 
                 } else if (itemId == R.id.silenced_non_business) {
                     prefs.edit().putInt(app.packageName, NON_BUSINESS).apply();
-                    apps.set(i, new SilencedApp(app.packageName, NON_BUSINESS));
-                    notifyItemChanged(i);
+                    apps.set(position, new SilencedApp(app.packageName, NON_BUSINESS));
+                    notifyItemChanged(position);
 
-                    Toast.makeText(context, context.getString(R.string.silenced_non_business),
-                            Toast.LENGTH_SHORT).show();
+                    /*Toast.makeText(context, context.getString(R.string.silenced_non_business),
+                            Toast.LENGTH_SHORT).show();*/
                     return true;
 
                 } else if (itemId == R.id.not_silenced) {
                     prefs.edit().remove(app.packageName).apply();
-                    apps.remove(i);
-                    notifyItemRemoved(i);
+                    apps.remove(position);
+                    notifyItemRemoved(position);
 
-                    Toast.makeText(context, context.getString(R.string.not_silenced),
-                            Toast.LENGTH_SHORT).show();
+                    /*Toast.makeText(context, context.getString(R.string.not_silenced),
+                            Toast.LENGTH_SHORT).show();*/
                     return true;
                 }
                 return false;

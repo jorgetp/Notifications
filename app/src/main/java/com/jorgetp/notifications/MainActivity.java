@@ -59,7 +59,9 @@ public class MainActivity extends AppCompatActivity {
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 
-    private int lastNotificationsCountInPrefs = -1;
+    private long lastPauseTimestamp = Long.MAX_VALUE;
+    private int lastNotificationCount = Integer.MIN_VALUE;
+
     private SharedPreferences notificationsPrefs;
     private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
 
@@ -147,33 +149,28 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // to refresh UI on new notifications when app was paused
-        int newCount = notificationsPrefs.getAll().size();
-        if (newCount != lastNotificationsCountInPrefs) {
+
+        if (notificationsPrefs.getAll().size() != lastNotificationCount) {
+            // refresh if new notifications were posted when app was paused
             refreshDataAndUI();
-            lastNotificationsCountInPrefs = newCount;
+        } else if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
+            // refresh if at least 10 mins have elapsed from last pause
+            selectedPackage = "all";
+            refreshDataAndUI();
         }
 
-        // to refresh UI on new notifications when app is active
+        // register listener to refresh when app is active and new notifications are posted
         notificationsPrefs.registerOnSharedPreferenceChangeListener(notificationsListener);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        // save timestamp
+        lastPauseTimestamp = System.currentTimeMillis();
+
         // unregister listener
         notificationsPrefs.unregisterOnSharedPreferenceChangeListener(notificationsListener);
-
-        // trigger a reload after 10 mins of inactivity
-        Executors.newSingleThreadExecutor().execute(() -> {
-            try {
-                Thread.sleep(10 * 60 * 1000);
-                selectedPackage = "all";
-                lastNotificationsCountInPrefs = -1;
-            } catch (InterruptedException e) {
-                Log.e("MainActivity", "Thread interrupted", e);
-            }
-        });
     }
 
     @SuppressLint("RestrictedApi")
@@ -307,7 +304,7 @@ public class MainActivity extends AppCompatActivity {
     public void refreshDataAndUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             loadAllNotifications();
-            runOnUiThread(this::refreshNotificationsView);
+            refreshNotificationsView();
         });
     }
 
@@ -329,10 +326,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             ArrayList<JSONObject> selectedNotificationsFinal = selectedNotifications;
-            runOnUiThread(() -> {
-                if (notificationsAdapter != null && selectedNotificationsFinal != null)
-                    notificationsAdapter.updateData(selectedNotificationsFinal);
-            });
+            runOnUiThread(() -> notificationsAdapter.updateData(selectedNotificationsFinal));
         });
     }
 
@@ -381,6 +375,7 @@ public class MainActivity extends AppCompatActivity {
         packages.add(0, new AbstractMap.SimpleEntry<>("all", getString(R.string.all)));
 
         allNotifications = new AllNotifications(notifications, packages);
+        lastNotificationCount = notifications.size();
         Log.d("NotificationsAdapter", "All notifications loaded");
     }
 

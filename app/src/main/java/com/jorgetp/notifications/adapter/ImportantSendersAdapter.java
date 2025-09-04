@@ -93,8 +93,8 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
                 .setMessage(R.string.unset_as_important_confirmation)
                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                     prefs.edit().remove(sender.packageName + "/" + sender.sender).apply();
-                    senders.remove(i);
-                    notifyItemRemoved(i);
+                    senders.remove(holder.getAdapterPosition());
+                    notifyItemRemoved(holder.getAdapterPosition());
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .create()
