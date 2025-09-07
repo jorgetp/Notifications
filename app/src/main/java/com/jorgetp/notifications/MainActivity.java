@@ -230,9 +230,9 @@ public class MainActivity extends AppCompatActivity {
                                     JSONObject notification = new JSONObject(entry.getValue().toString());
                                     long postTime = notification.optLong("postTime");
                                     Date date = toDate(postTime);
-                                    if (!isToday(date)) {
+                                    if (!isToday(date))
                                         keysToDelete.add(entry.getKey());
-                                    }
+
                                 } catch (JSONException e) {
                                     Log.e("MainActivity", "JSON error", e);
                                 }
