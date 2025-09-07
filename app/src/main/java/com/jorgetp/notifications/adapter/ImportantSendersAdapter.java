@@ -20,23 +20,25 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.jorgetp.notifications.NotificationService;
 import com.jorgetp.notifications.R;
 
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Map;
 
 public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSendersAdapter.ViewHolder> {
-    private final ArrayList<ImportantSender> senders;
     private final Context context;
-    private final SharedPreferences prefs;
+    private final ArrayList<ImportantSender> senders;
 
     public ImportantSendersAdapter(Context context) {
         this.context = context;
         senders = new ArrayList<>(10);
-        prefs = context.getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
-        for (String key : prefs.getAll().keySet()) {
-            String value = prefs.getString(key, "");
+        SharedPreferences prefs = NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS);
+        for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue().toString();
             String[] parts = key.split("/", 2);
             senders.add(new ImportantSender(parts[0], parts[1], value));
         }
@@ -67,8 +69,10 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
 
         // Load app name and icon
         try {
-            ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(sender.packageName, 0);
-            Drawable appIcon = context.getPackageManager().getApplicationIcon(appInfo);
+            PackageManager pm = context.getApplicationContext().getPackageManager();
+            ApplicationInfo appInfo = pm.getApplicationInfo(sender.packageName, 0);
+            Drawable appIcon = pm.getApplicationIcon(appInfo);
+
             holder.ivIcon.setImageDrawable(appIcon);
             holder.ivIconSecondary.setVisibility(View.GONE);
 
@@ -92,7 +96,10 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(context)
                 .setMessage(R.string.unset_as_important_confirmation)
                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                    prefs.edit().remove(sender.packageName + "/" + sender.sender).apply();
+                    NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS)
+                            .edit()
+                            .remove(sender.packageName + "/" + sender.sender)
+                            .apply();
                     senders.remove(holder.getAdapterPosition());
                     notifyItemRemoved(holder.getAdapterPosition());
                 })

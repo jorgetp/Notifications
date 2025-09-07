@@ -69,7 +69,7 @@ public class MainActivity extends AppCompatActivity {
     private AllNotifications allNotifications;
     private String selectedPackage = "all";
 
-    public static Date ToDate(long timestamp) {
+    public static Date toDate(long timestamp) {
         try {
             return new Date(timestamp);
         } catch (NumberFormatException e) {
@@ -77,13 +77,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public static boolean IsToday(Date date) {
+    public static boolean isToday(Date date) {
         LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate today = LocalDate.now();
         return givenDate.equals(today);
     }
 
-    public static boolean IsYesterday(Date date) {
+    public static boolean isYesterday(Date date) {
         LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate yesterday = LocalDate.now().minusDays(1);
         return givenDate.equals(yesterday);
@@ -142,7 +142,7 @@ public class MainActivity extends AppCompatActivity {
         rvNotifications.setLayoutManager(lm);
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
 
-        notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
+        notificationsPrefs = NotificationService.getPrefs(this, NOTIFICATIONS_PREFS);
         notificationsListener = (sharedPreferences, key) -> refreshDataAndUI();
     }
 
@@ -188,8 +188,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        SharedPreferences importantSendersPrefs = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
-                Context.MODE_PRIVATE);
+        SharedPreferences importantSendersPrefs = NotificationService.getPrefs(this,
+                IMPORTANT_SENDERS_PREFS);
 
         int itemId = item.getItemId();
         if (itemId == R.id.menu_filter) {
@@ -229,8 +229,8 @@ public class MainActivity extends AppCompatActivity {
                                 try {
                                     JSONObject notification = new JSONObject(entry.getValue().toString());
                                     long postTime = notification.optLong("postTime");
-                                    Date date = ToDate(postTime);
-                                    if (!IsToday(date)) {
+                                    Date date = toDate(postTime);
+                                    if (!isToday(date)) {
                                         keysToDelete.add(entry.getKey());
                                     }
                                 } catch (JSONException e) {

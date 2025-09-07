@@ -2,10 +2,10 @@ package com.jorgetp.notifications.adapter;
 
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
-import static com.jorgetp.notifications.MainActivity.IsToday;
-import static com.jorgetp.notifications.MainActivity.IsYesterday;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
-import static com.jorgetp.notifications.MainActivity.ToDate;
+import static com.jorgetp.notifications.MainActivity.isToday;
+import static com.jorgetp.notifications.MainActivity.isYesterday;
+import static com.jorgetp.notifications.MainActivity.toDate;
 
 import android.app.Dialog;
 import android.content.ClipData;
@@ -34,6 +34,7 @@ import androidx.annotation.NonNull;
 import androidx.core.view.MenuCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.jorgetp.notifications.NotificationService;
 import com.jorgetp.notifications.R;
 
 import org.json.JSONObject;
@@ -46,14 +47,10 @@ import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdapter.ViewHolder> {
     private final Context context;
-    private final SharedPreferences silencedAppsPrefs;
-    private final SharedPreferences importantSendersPrefs;
     private ArrayList<JSONObject> notifications = new ArrayList<>();
 
     public NotificationsAdapter(Context context) {
         this.context = context;
-        silencedAppsPrefs = context.getSharedPreferences(SILENCED_APPS_PREFS, Context.MODE_PRIVATE);
-        importantSendersPrefs = context.getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE);
     }
 
     public void updateData(ArrayList<JSONObject> newNotifications) {
@@ -74,13 +71,18 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     @NonNull
     @Override
     public NotificationsAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_notification, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_notification,
+                parent, false);
         return new NotificationsAdapter.ViewHolder(view);
     }
 
     @Override
     public void onBindViewHolder(@NonNull NotificationsAdapter.ViewHolder holder, int i) {
         JSONObject notification = notifications.get(i);
+
+        SharedPreferences silencedAppsPrefs = NotificationService.getPrefs(context, SILENCED_APPS_PREFS);
+        SharedPreferences importantSendersPrefs = NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS);
+        PackageManager pm = context.getApplicationContext().getPackageManager();
 
         String packageName = notification.optString("package");
         String title = notification.optString("title");
@@ -91,12 +93,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         boolean isImportant = importantSendersPrefs.contains(packageName + "/" + title);
 
         long postTime = notification.optLong("postTime");
-        Date date = ToDate(postTime);
+        Date date = toDate(postTime);
         if (date != null) {
-            if (IsToday(date)) {
+            if (isToday(date)) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
                 holder.tvTime.setText(sdf.format(date));
-            } else if (IsYesterday(date)) {
+            } else if (isYesterday(date)) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
                 holder.tvTime.setText(context.getString(R.string.yesterday, sdf.format(date)));
             } else {
@@ -111,11 +113,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         // Load app name and icon
         try {
-            ApplicationInfo appInfo = context.getPackageManager().getApplicationInfo(packageName, 0);
-            CharSequence appName = context.getPackageManager().getApplicationLabel(appInfo);
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+            CharSequence appName = pm.getApplicationLabel(appInfo);
             holder.tvApp.setText(appName);
 
-            Drawable appIcon = context.getPackageManager().getApplicationIcon(appInfo);
+            Drawable appIcon = pm.getApplicationIcon(appInfo);
             holder.ivIcon.setImageDrawable(appIcon);
             holder.ivIconSecondary.setVisibility(View.GONE);
 
@@ -187,7 +189,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                     return true;
 
                 } else if (itemId == R.id.go_to_app) {
-                    Intent launchIntent = context.getPackageManager().getLaunchIntentForPackage(packageName);
+                    Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
                     if (launchIntent != null) {
                         context.startActivity(launchIntent);
                     } else {
@@ -204,7 +206,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                     return true;
 
                 } else if (itemId == R.id.set_as_important) {
-                    importantSendersPrefs.edit().putString(packageName + "/" + title, notification.optString("uuid")).apply();
+                    importantSendersPrefs.edit().putString(packageName + "/" + title,
+                            notification.optString("uuid")).apply();
                     Toast.makeText(context, context.getString(R.string.set_as_important),
                             Toast.LENGTH_SHORT).show();
                     return true;

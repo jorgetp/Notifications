@@ -39,7 +39,7 @@ public class NotificationService extends NotificationListenerService {
     private final Random random = new Random();
     private NotificationManager manager;
 
-    private static String CreateKey(JSONObject json) {
+    private static String createKey(JSONObject json) {
         long postTimeBlock = json.optLong("postTime") / 30000;
         String packageName = json.optString("package", "");
         String title = json.optString("title", "");
@@ -47,6 +47,10 @@ public class NotificationService extends NotificationListenerService {
         String text = textRaw.substring(0, Math.min(300, textRaw.length()));
 
         return postTimeBlock + "|" + packageName + "|" + title + "|" + text;
+    }
+
+    public static SharedPreferences getPrefs(Context context, String name) {
+        return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);
     }
 
     @Override
@@ -113,8 +117,9 @@ public class NotificationService extends NotificationListenerService {
 
         // asynchronously continue processing, i.e. save notification, icons, etc...
         Executors.newSingleThreadExecutor().execute(() -> {
-            String notificationKey = CreateKey(json);
-            SharedPreferences notificationsPrefs = getSharedPreferences(NOTIFICATIONS_PREFS, Context.MODE_PRIVATE);
+            String notificationKey = createKey(json);
+            SharedPreferences notificationsPrefs = getPrefs(this, NOTIFICATIONS_PREFS);
+            SharedPreferences importantSenders = getPrefs(this, IMPORTANT_SENDERS_PREFS);
             boolean postNotification = isSilenced && !notificationsPrefs.contains(notificationKey);
 
             // save notification
@@ -131,8 +136,6 @@ public class NotificationService extends NotificationListenerService {
                         largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
 
                         // update important sender icon if applicable
-                        SharedPreferences importantSenders = getSharedPreferences(IMPORTANT_SENDERS_PREFS,
-                                Context.MODE_PRIVATE);
                         String key = sbn.getPackageName() + "/" + title;
                         if (importantSenders.contains(key))
                             importantSenders.edit().putString(key, uuid).apply();
@@ -183,8 +186,7 @@ public class NotificationService extends NotificationListenerService {
         if (extras != null) {
             CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
             if (title != null)
-                return getSharedPreferences(IMPORTANT_SENDERS_PREFS, Context.MODE_PRIVATE)
-                        .contains(packageName + "/" + title);
+                return getPrefs(this, IMPORTANT_SENDERS_PREFS).contains(packageName + "/" + title);
         }
         return false;
     }
@@ -221,8 +223,7 @@ public class NotificationService extends NotificationListenerService {
         if (isInDndMode())
             return !isImportantNotification(sbn);
 
-        switch (getSharedPreferences(SILENCED_APPS_PREFS,
-                Context.MODE_PRIVATE).getInt(sbn.getPackageName(), 0)) {
+        switch (getPrefs(this, SILENCED_APPS_PREFS).getInt(sbn.getPackageName(), 0)) {
             case ALWAYS:
                 return !isImportantNotification(sbn);
             case NON_BUSINESS:
@@ -239,7 +240,7 @@ public class NotificationService extends NotificationListenerService {
         long postTime = notification.optLong("postTime");
 
         // create notification builder
-        Notification.Builder builder = new Notification.Builder(this, CHANNEL_ID)
+        Notification.Builder builder = new Notification.Builder(getApplicationContext(), CHANNEL_ID)
                 .setSmallIcon(R.drawable.outline_notifications_off_24)
                 .setContentTitle(getString(R.string.silenced_notification, title))
                 .setContentText(text)
@@ -283,7 +284,7 @@ public class NotificationService extends NotificationListenerService {
         Intent launchIntent = getPackageManager().getLaunchIntentForPackage(packageName);
         if (launchIntent != null) {
             builder.setContentIntent(PendingIntent.getActivity(
-                    this, 0, launchIntent,
+                    getApplicationContext(), 0, launchIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         }
 
