@@ -101,6 +101,14 @@ public class MainActivity extends AppCompatActivity {
         int color = 0xFF000000 | (r << 16) | (g << 8) | b;
 
         String firstLetter = sender.substring(0, 1).toUpperCase();
+        int lastIndex = sender.lastIndexOf(":");
+        if (lastIndex != -1) {
+            while (lastIndex < sender.length() - 1 && !Character.isLetter(sender.charAt(lastIndex)))
+                lastIndex++;
+            if (lastIndex < sender.length() - 1)
+                firstLetter = sender.substring(lastIndex, lastIndex + 1).toUpperCase();
+        }
+
         Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
         android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
         android.graphics.Paint paint = new android.graphics.Paint();

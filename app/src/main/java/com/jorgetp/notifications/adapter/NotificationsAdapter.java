@@ -114,7 +114,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             holder.ivSmallIcon.setImageDrawable(appInfo.second);
         else
             holder.ivSmallIcon.setImageResource(android.R.drawable.sym_def_app_icon);
-        //holder.ivSmallIcon.setVisibility(View.GONE);
+        // holder.ivSmallIcon.setVisibility(View.GONE);
 
         // large icon
         holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
