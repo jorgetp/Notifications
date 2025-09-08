@@ -23,6 +23,7 @@ import com.jorgetp.notifications.NotificationService;
 import com.jorgetp.notifications.R;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -53,14 +54,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         }
 
         // sort apps by app name
-        apps.sort((o1, o2) -> {
-            try {
-                return appNames.get(o1.packageName).compareTo(appNames.get(o2.packageName));
-            } catch (NullPointerException e) {
-                Log.e("SilencedAppsAdapter", "Sorting error", e);
-                return 0;
-            }
-        });
+        apps.sort(Comparator.comparing(app -> appNames.get(app.packageName)));
     }
 
     @Override
@@ -86,6 +80,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         SilencedApp app = apps.get(i);
 
         holder.tvApp.setText(app.packageName);
+        holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
         holder.tvSilencedWhen.setText(app.silencedWhen == ALWAYS ?
                 context.getString(R.string.silenced_always) :
                 context.getString(R.string.silenced_non_business));
@@ -110,32 +105,24 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
-                int position = holder.getAdapterPosition();
+                int position = holder.getBindingAdapterPosition();
+
                 if (itemId == R.id.silenced_always) {
                     prefs.edit().putInt(app.packageName, ALWAYS).apply();
                     apps.set(position, new SilencedApp(app.packageName, ALWAYS));
                     notifyItemChanged(position);
-
-                    /*Toast.makeText(context, context.getString(R.string.silenced_always),
-                            Toast.LENGTH_SHORT).show();*/
                     return true;
 
                 } else if (itemId == R.id.silenced_non_business) {
                     prefs.edit().putInt(app.packageName, NON_BUSINESS).apply();
                     apps.set(position, new SilencedApp(app.packageName, NON_BUSINESS));
                     notifyItemChanged(position);
-
-                    /*Toast.makeText(context, context.getString(R.string.silenced_non_business),
-                            Toast.LENGTH_SHORT).show();*/
                     return true;
 
                 } else if (itemId == R.id.not_silenced) {
                     prefs.edit().remove(app.packageName).apply();
                     apps.remove(position);
                     notifyItemRemoved(position);
-
-                    /*Toast.makeText(context, context.getString(R.string.not_silenced),
-                            Toast.LENGTH_SHORT).show();*/
                     return true;
                 }
                 return false;

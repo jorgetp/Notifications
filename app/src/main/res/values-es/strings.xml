@@ -18,7 +18,7 @@
     <string name="important_senders">Remitentes importantes</string>
     <string name="yesterday">Ayer %s</string>
     <string name="all">Todo</string>
-    <string name="pop_out">Resaltar</string>
+    <string name="view_full_text">Ver texto completo</string>
     <string name="unset_as_important_confirmation">¿Estás seguro de que deseas desmarcar al remitente como importante?</string>
     <string name="settings">Configuración</string>
     <string name="copied_title">Remitente copiado</string>

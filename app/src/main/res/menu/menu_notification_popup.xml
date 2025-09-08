@@ -22,7 +22,7 @@
     </group>
     <group android:id="@+id/group_general">
         <item
-            android:id="@+id/pop_out"
-            android:title="@string/pop_out" />
+            android:id="@+id/view_full_text"
+            android:title="@string/view_full_text" />
     </group>
 </menu>

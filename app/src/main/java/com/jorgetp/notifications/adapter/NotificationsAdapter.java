@@ -7,7 +7,6 @@ import static com.jorgetp.notifications.MainActivity.isToday;
 import static com.jorgetp.notifications.MainActivity.isYesterday;
 import static com.jorgetp.notifications.MainActivity.toDate;
 
-import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -24,7 +23,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -48,6 +46,7 @@ import java.util.Locale;
 public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdapter.ViewHolder> {
     private final Context context;
     private ArrayList<JSONObject> notifications = new ArrayList<>();
+    private boolean[] fullText;
 
     public NotificationsAdapter(Context context) {
         this.context = context;
@@ -55,6 +54,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
     public void updateData(ArrayList<JSONObject> newNotifications) {
         this.notifications = newNotifications;
+        fullText = new boolean[newNotifications.size()];
         notifyDataSetChanged();
     }
 
@@ -110,6 +110,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         holder.tvApp.setText(packageName);
         holder.tvTitle.setText(title);
         holder.tvText.setText(text);
+        holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
+        holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+        holder.ivIconSecondary.setVisibility(View.GONE);
 
         // Load app name and icon
         try {
@@ -119,7 +122,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
             Drawable appIcon = pm.getApplicationIcon(appInfo);
             holder.ivIcon.setImageDrawable(appIcon);
-            holder.ivIconSecondary.setVisibility(View.GONE);
 
             // load icon from internal storage if it exists
             try (FileInputStream fis = context
@@ -148,6 +150,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
+                int position = holder.getBindingAdapterPosition();
+
                 if (itemId == R.id.copy_title) {
                     ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                     ClipData clip = ClipData.newPlainText("Notification title", title);
@@ -162,30 +166,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                     Toast.makeText(context, R.string.copied_text, Toast.LENGTH_SHORT).show();
                     return true;
 
-                } else if (itemId == R.id.pop_out) {
-                    try {
-                        Dialog dialog = new Dialog(context);
-                        dialog.setContentView(R.layout.item_notification);
-
-                        ((ImageView) dialog.findViewById(R.id.ivIcon)).setImageDrawable(holder.ivIcon.getDrawable());
-                        ((ImageView) dialog.findViewById(R.id.ivIconSecondary)).setImageDrawable(holder.ivIconSecondary.getDrawable());
-                        ((ImageView) dialog.findViewById(R.id.ivIconSecondary)).setVisibility(holder.ivIconSecondary.getVisibility());
-                        ((TextView) dialog.findViewById(R.id.tvApp)).setText(holder.tvApp.getText());
-                        ((TextView) dialog.findViewById(R.id.tvTime)).setText(holder.tvTime.getText());
-                        ((TextView) dialog.findViewById(R.id.tvTitle)).setText(holder.tvTitle.getText());
-                        ((TextView) dialog.findViewById(R.id.tvText)).setText(holder.tvText.getText());
-                        ((TextView) dialog.findViewById(R.id.tvText)).setMaxLines(Integer.MAX_VALUE);
-
-                        Window window = dialog.getWindow();
-                        if (window != null) {
-                            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                            window.setBackgroundDrawableResource(android.R.color.transparent);
-                            window.setDimAmount(0.9f);
-                        }
-                        dialog.show();
-
-                    } catch (Exception ignored) {
-                    }
+                } else if (itemId == R.id.view_full_text) {
+                    fullText[position] = true;
+                    notifyItemChanged(position);
                     return true;
 
                 } else if (itemId == R.id.go_to_app) {

@@ -78,7 +78,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:maxLines="3"
             android:text="Hello, how are you doing today?" />
     </LinearLayout>
 

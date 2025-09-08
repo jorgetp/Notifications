@@ -66,6 +66,8 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     public void onBindViewHolder(@NonNull ImportantSendersAdapter.ViewHolder holder, int i) {
         ImportantSender sender = senders.get(i);
         holder.tvSender.setText(sender.sender);
+        holder.ivIcon.setImageResource(R.drawable.outline_person_24);
+        holder.ivIconSecondary.setVisibility(View.GONE);
 
         // Load app name and icon
         try {
@@ -74,7 +76,6 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             Drawable appIcon = pm.getApplicationIcon(appInfo);
 
             holder.ivIcon.setImageDrawable(appIcon);
-            holder.ivIconSecondary.setVisibility(View.GONE);
 
             // load sender icon from internal storage if it exists
             try (FileInputStream fis = context
@@ -100,8 +101,8 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
                             .edit()
                             .remove(sender.packageName + "/" + sender.sender)
                             .apply();
-                    senders.remove(holder.getAdapterPosition());
-                    notifyItemRemoved(holder.getAdapterPosition());
+                    senders.remove(holder.getBindingAdapterPosition());
+                    notifyItemRemoved(holder.getBindingAdapterPosition());
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .create()
