@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:id="@+id/ivIcon"
+            android:id="@+id/ivLargeIcon"
             android:layout_width="@dimen/xl"
             android:layout_height="@dimen/xl"
             app:layout_constraintEnd_toEndOf="parent"
@@ -26,7 +26,7 @@
             app:srcCompat="@android:drawable/sym_def_app_icon" />
 
         <ImageView
-            android:id="@+id/ivIconSecondary"
+            android:id="@+id/ivSmallIcon"
             android:layout_width="@dimen/mmd"
             android:layout_height="@dimen/mmd"
             app:layout_constraintBottom_toBottomOf="parent"

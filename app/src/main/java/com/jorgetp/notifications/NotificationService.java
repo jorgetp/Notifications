@@ -13,8 +13,6 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
@@ -48,23 +46,6 @@ public class NotificationService extends NotificationListenerService {
         String text = textRaw.substring(0, Math.min(300, textRaw.length()));
 
         return postTimeBlock + "|" + packageName + "|" + title + "|" + text;
-    }
-
-    public static SharedPreferences getPrefs(Context context, String name) {
-        return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);
-    }
-
-    public static Pair<CharSequence, Drawable> getAppInfo(Context context, String packageName) {
-        try {
-            PackageManager pm = context.getApplicationContext().getPackageManager();
-            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-            CharSequence appName = pm.getApplicationLabel(appInfo);
-            return Pair.create(appName, pm.getApplicationIcon(appInfo));
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e("NotificationService", "App not found", e);
-        }
-        return Pair.create(packageName, null);
     }
 
     @Override
@@ -132,8 +113,8 @@ public class NotificationService extends NotificationListenerService {
         // asynchronously continue processing, i.e. save notification, icons, etc...
         Executors.newSingleThreadExecutor().execute(() -> {
             String notificationKey = createKey(json);
-            SharedPreferences notificationsPrefs = getPrefs(this, NOTIFICATIONS_PREFS);
-            SharedPreferences importantSenders = getPrefs(this, IMPORTANT_SENDERS_PREFS);
+            SharedPreferences notificationsPrefs = MainActivity.getPrefs(this, NOTIFICATIONS_PREFS);
+            SharedPreferences importantSenders = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
             boolean postNotification = isSilenced && !notificationsPrefs.contains(notificationKey);
 
             // save notification
@@ -200,7 +181,7 @@ public class NotificationService extends NotificationListenerService {
         if (extras != null) {
             CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
             if (title != null)
-                return getPrefs(this, IMPORTANT_SENDERS_PREFS).contains(packageName + "/" + title);
+                return MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS).contains(packageName + "/" + title);
         }
         return false;
     }
@@ -237,7 +218,7 @@ public class NotificationService extends NotificationListenerService {
         if (isInDndMode())
             return !isImportantNotification(sbn);
 
-        switch (getPrefs(this, SILENCED_APPS_PREFS).getInt(sbn.getPackageName(), 0)) {
+        switch (MainActivity.getPrefs(this, SILENCED_APPS_PREFS).getInt(sbn.getPackageName(), 0)) {
             case ALWAYS:
                 return !isImportantNotification(sbn);
             case NON_BUSINESS:
@@ -269,7 +250,7 @@ public class NotificationService extends NotificationListenerService {
             builder.setLargeIcon(largeIcon);
         else {
             // set large icon as the original app icon
-            Pair<CharSequence, Drawable> appInfo = getAppInfo(getApplicationContext(), packageName);
+            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(getApplicationContext(), packageName);
             if (appInfo.second != null) {
                 Bitmap iconBitmap;
                 if (appInfo.second instanceof BitmapDrawable) {

@@ -28,7 +28,7 @@ import androidx.annotation.NonNull;
 import androidx.core.view.MenuCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jorgetp.notifications.NotificationService;
+import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 
 import org.json.JSONObject;
@@ -76,8 +76,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     public void onBindViewHolder(@NonNull NotificationsAdapter.ViewHolder holder, int i) {
         JSONObject notification = notifications.get(i);
 
-        SharedPreferences silencedAppsPrefs = NotificationService.getPrefs(context, SILENCED_APPS_PREFS);
-        SharedPreferences importantSendersPrefs = NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS);
+        SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
+        SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
 
         String packageName = notification.optString("package");
         String title = notification.optString("title");
@@ -102,31 +102,31 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             }
         }
 
-        Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(context, packageName);
+        Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, packageName);
 
         holder.tvApp.setText(appInfo.first);
         holder.tvTitle.setText(title);
         holder.tvText.setText(text);
         holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
 
-        if (appInfo.second != null) {
-            holder.ivIcon.setImageDrawable(appInfo.second);
-            holder.ivIconSecondary.setImageDrawable(appInfo.second);
-        } else {
-            holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
-            holder.ivIconSecondary.setImageResource(android.R.drawable.sym_def_app_icon);
-        }
+        // small icon
+        if (appInfo.second != null)
+            holder.ivSmallIcon.setImageDrawable(appInfo.second);
+        else
+            holder.ivSmallIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+        //holder.ivSmallIcon.setVisibility(View.GONE);
 
-        holder.ivIconSecondary.setVisibility(View.GONE);
-
-        // Load icon from internal storage if it exists
+        // large icon
+        holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
+        /*if (appInfo.second != null)
+            holder.ivLargeIcon.setImageDrawable(appInfo.second);
+        else
+            holder.ivLargeIcon.setImageResource(android.R.drawable.sym_def_app_icon);*/
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
             Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-
-            holder.ivIcon.setImageBitmap(iconBitmap);
-            holder.ivIconSecondary.setVisibility(View.VISIBLE);
-
+            holder.ivLargeIcon.setImageBitmap(iconBitmap);
+            // holder.ivSmallIcon.setVisibility(View.VISIBLE);
         } catch (Exception e) {
             Log.e("NotificationsAdapter", "Icon not found", e);
         }
@@ -184,8 +184,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivIcon;
-        ImageView ivIconSecondary;
+        ImageView ivLargeIcon;
+        ImageView ivSmallIcon;
         TextView tvApp;
         TextView tvTime;
         TextView tvTitle;
@@ -193,8 +193,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivIcon = itemView.findViewById(R.id.ivIcon);
-            ivIconSecondary = itemView.findViewById(R.id.ivIconSecondary);
+            ivLargeIcon = itemView.findViewById(R.id.ivLargeIcon);
+            ivSmallIcon = itemView.findViewById(R.id.ivSmallIcon);
             tvApp = itemView.findViewById(R.id.tvApp);
             tvTime = itemView.findViewById(R.id.tvTime);
             tvTitle = itemView.findViewById(R.id.tvTitle);

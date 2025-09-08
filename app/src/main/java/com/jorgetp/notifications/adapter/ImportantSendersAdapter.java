@@ -19,7 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jorgetp.notifications.NotificationService;
+import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 
 import java.io.FileInputStream;
@@ -34,7 +34,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     public ImportantSendersAdapter(Context context) {
         this.context = context;
         senders = new ArrayList<>(10);
-        SharedPreferences prefs = NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS);
+        SharedPreferences prefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
         for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue().toString();
@@ -65,24 +65,22 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     public void onBindViewHolder(@NonNull ImportantSendersAdapter.ViewHolder holder, int i) {
         ImportantSender sender = senders.get(i);
 
-        // Load app name and icon
-        Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(context, sender.packageName);
+        // load app name and icon
+        Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
         holder.tvSender.setText(sender.sender);
-        if (appInfo.second != null) {
-            holder.ivIcon.setImageResource(R.drawable.outline_person_24);
-            holder.ivIconSecondary.setImageDrawable(appInfo.second);
-        } else {
-            holder.ivIcon.setImageResource(R.drawable.outline_person_24);
-            holder.ivIconSecondary.setImageResource(android.R.drawable.sym_def_app_icon);
-        }
 
-        // Load sender icon from internal storage if it exists
+        // small icon
+        if (appInfo.second != null)
+            holder.ivSmallIcon.setImageDrawable(appInfo.second);
+        else
+            holder.ivSmallIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+
+        // large icon
+        holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(sender.packageName, sender.sender));
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + sender.uuid + ".png")) {
             Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-
-            holder.ivIcon.setImageBitmap(iconBitmap);
-
+            holder.ivLargeIcon.setImageBitmap(iconBitmap);
         } catch (Exception e) {
             Log.e("NotificationsAdapter", "Icon not found", e);
         }
@@ -90,7 +88,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(context)
                 .setMessage(R.string.unset_as_important_confirmation)
                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                    NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS)
+                    MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS)
                             .edit()
                             .remove(sender.packageName + "/" + sender.sender)
                             .apply();
@@ -103,14 +101,14 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivIcon;
-        ImageView ivIconSecondary;
+        ImageView ivLargeIcon;
+        ImageView ivSmallIcon;
         TextView tvSender;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivIcon = itemView.findViewById(R.id.ivIcon);
-            ivIconSecondary = itemView.findViewById(R.id.ivIconSecondary);
+            ivLargeIcon = itemView.findViewById(R.id.ivLargeIcon);
+            ivSmallIcon = itemView.findViewById(R.id.ivSmallIcon);
             tvSender = itemView.findViewById(R.id.tvSender);
         }
     }
@@ -127,4 +125,3 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         }
     }
 }
-

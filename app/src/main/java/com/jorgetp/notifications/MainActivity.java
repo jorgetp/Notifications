@@ -7,6 +7,9 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -89,6 +92,45 @@ public class MainActivity extends AppCompatActivity {
         return givenDate.equals(yesterday);
     }
 
+    public static Bitmap createIconBitmap(String packageName, String sender) {
+        // create a tree set of colors based on the package name and sender
+        int hash = (packageName + sender).hashCode();
+        int r = (hash >> 16) & 0xFF;
+        int g = (hash >> 8) & 0xFF;
+        int b = hash & 0xFF;
+        int color = 0xFF000000 | (r << 16) | (g << 8) | b;
+
+        String firstLetter = sender.substring(0, 1).toUpperCase();
+        Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+        android.graphics.Paint paint = new android.graphics.Paint();
+        paint.setColor(color);
+        paint.setStyle(android.graphics.Paint.Style.FILL);
+        canvas.drawCircle(50, 50, 50, paint);
+        paint.setColor(0xFF000000);
+        paint.setTextSize(60);
+        paint.setTextAlign(android.graphics.Paint.Align.CENTER);
+        canvas.drawText(firstLetter, 50, 65, paint);
+        return bitmap;
+    }
+
+    public static SharedPreferences getPrefs(Context context, String name) {
+        return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);
+    }
+
+    public static Pair<CharSequence, Drawable> getAppInfo(Context context, String packageName) {
+        try {
+            PackageManager pm = context.getApplicationContext().getPackageManager();
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+            CharSequence appName = pm.getApplicationLabel(appInfo);
+            return Pair.create(appName, pm.getApplicationIcon(appInfo));
+
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("NotificationService", "App not found", e);
+        }
+        return Pair.create(packageName, null);
+    }
+
     private boolean isNotificationServiceEnabled() {
         String pkgName = getPackageName();
         String enabledListeners = Settings.Secure.getString(getContentResolver(),
@@ -142,7 +184,7 @@ public class MainActivity extends AppCompatActivity {
         rvNotifications.setLayoutManager(lm);
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
 
-        notificationsPrefs = NotificationService.getPrefs(this, NOTIFICATIONS_PREFS);
+        notificationsPrefs = getPrefs(this, NOTIFICATIONS_PREFS);
         notificationsListener = (sharedPreferences, key) -> refreshDataAndUI();
     }
 
@@ -188,7 +230,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        SharedPreferences importantSendersPrefs = NotificationService.getPrefs(this,
+        SharedPreferences importantSendersPrefs = getPrefs(this,
                 IMPORTANT_SENDERS_PREFS);
 
         int itemId = item.getItemId();
@@ -340,7 +382,7 @@ public class MainActivity extends AppCompatActivity {
                 notifications.add(notification);
 
                 String packageName = notification.optString("package");
-                Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(this, packageName);
+                Pair<CharSequence, Drawable> appInfo = getAppInfo(this, packageName);
                 packagesMap.put(packageName, appInfo.first.toString());
 
                 Log.d("NotificationsAdapter", "Notification loaded: " + notification);

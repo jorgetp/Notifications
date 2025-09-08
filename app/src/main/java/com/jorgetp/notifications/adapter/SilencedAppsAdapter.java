@@ -18,7 +18,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jorgetp.notifications.NotificationService;
+import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         this.context = context;
         apps = new ArrayList<>(10);
 
-        SharedPreferences prefs = NotificationService.getPrefs(context, SILENCED_APPS_PREFS);
+        SharedPreferences prefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
         for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
             String packageName = entry.getKey();
             Integer silencedWhen = (Integer) entry.getValue();
@@ -42,7 +42,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
         // sort apps by app name
         apps.sort(Comparator.comparing(app ->
-                NotificationService.getAppInfo(context, app.packageName).first.toString()));
+                MainActivity.getAppInfo(context, app.packageName).first.toString()));
     }
 
     @Override
@@ -68,7 +68,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         SilencedApp app = apps.get(i);
 
         // Load app name and icon
-        Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(context, app.packageName);
+        Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
         holder.tvApp.setText(appInfo.first);
         if (appInfo.second != null)
             holder.ivIcon.setImageDrawable(appInfo.second);
@@ -82,7 +82,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         holder.itemView.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(context, v);
             popup.getMenuInflater().inflate(R.menu.menu_app_popup, popup.getMenu());
-            SharedPreferences prefs = NotificationService.getPrefs(context, SILENCED_APPS_PREFS);
+            SharedPreferences prefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
@@ -120,7 +120,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivIcon = itemView.findViewById(R.id.ivIcon);
+            ivIcon = itemView.findViewById(R.id.ivLargeIcon);
             tvApp = itemView.findViewById(R.id.tvApp);
             tvSilencedWhen = itemView.findViewById(R.id.tvSilencedWhen);
         }
