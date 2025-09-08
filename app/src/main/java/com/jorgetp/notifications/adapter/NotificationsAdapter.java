@@ -67,7 +67,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     @NonNull
     @Override
     public NotificationsAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_notification,
+        View view = LayoutInflater.from(context).inflate(R.layout.item_notification_new,
                 parent, false);
         return new NotificationsAdapter.ViewHolder(view);
     }
@@ -114,19 +114,15 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             holder.ivSmallIcon.setImageDrawable(appInfo.second);
         else
             holder.ivSmallIcon.setImageResource(android.R.drawable.sym_def_app_icon);
-        // holder.ivSmallIcon.setVisibility(View.GONE);
 
         // large icon
-        holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
-        /*if (appInfo.second != null)
-            holder.ivLargeIcon.setImageDrawable(appInfo.second);
-        else
-            holder.ivLargeIcon.setImageResource(android.R.drawable.sym_def_app_icon);*/
+        // holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
+        holder.ivLargeIcon.setVisibility(View.GONE);
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
             Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
             holder.ivLargeIcon.setImageBitmap(iconBitmap);
-            // holder.ivSmallIcon.setVisibility(View.VISIBLE);
+            holder.ivLargeIcon.setVisibility(View.VISIBLE);
         } catch (Exception e) {
             Log.e("NotificationsAdapter", "Icon not found", e);
         }

@@ -57,7 +57,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     @NonNull
     @Override
     public ImportantSendersAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_important_sender, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_notification_new, parent, false);
         return new ImportantSendersAdapter.ViewHolder(view);
     }
 
@@ -67,6 +67,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
 
         // load app name and icon
         Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
+        holder.tvApp.setText(appInfo.first);
         holder.tvSender.setText(sender.sender);
 
         // small icon
@@ -76,11 +77,13 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             holder.ivSmallIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
         // large icon
-        holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(sender.packageName, sender.sender));
+        // holder.ivLargeIcon.setImageBitmap(MainActivity.createIconBitmap(sender.packageName, sender.sender));
+        holder.ivLargeIcon.setVisibility(View.GONE);
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + sender.uuid + ".png")) {
             Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
             holder.ivLargeIcon.setImageBitmap(iconBitmap);
+            holder.ivLargeIcon.setVisibility(View.VISIBLE);
         } catch (Exception e) {
             Log.e("NotificationsAdapter", "Icon not found", e);
         }
@@ -103,13 +106,20 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivLargeIcon;
         ImageView ivSmallIcon;
+        TextView tvApp;
         TextView tvSender;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             ivLargeIcon = itemView.findViewById(R.id.ivLargeIcon);
             ivSmallIcon = itemView.findViewById(R.id.ivSmallIcon);
-            tvSender = itemView.findViewById(R.id.tvSender);
+            tvApp = itemView.findViewById(R.id.tvApp);
+            tvSender = itemView.findViewById(R.id.tvTitle);
+
+            TextView tvTime = itemView.findViewById(R.id.tvTime);
+            TextView tvTap = itemView.findViewById(R.id.tvText);
+            tvTime.setVisibility(View.GONE);
+            tvTap.setText(R.string.tap_to_unset_as_important);
         }
     }
 
