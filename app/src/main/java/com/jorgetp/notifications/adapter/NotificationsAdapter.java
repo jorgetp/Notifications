@@ -114,13 +114,13 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
         // sender icon
-        // holder.ivSenderIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
-        holder.ivSenderIcon.setVisibility(View.GONE);
+        holder.ivSenderIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
+        // holder.ivSenderIcon.setVisibility(View.GONE);
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
             Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
             holder.ivSenderIcon.setImageBitmap(iconBitmap);
-            holder.ivSenderIcon.setVisibility(View.VISIBLE);
+            // holder.ivSenderIcon.setVisibility(View.VISIBLE);
         } catch (Exception e) {
             Log.e("NotificationsAdapter", "Icon not found", e);
         }
