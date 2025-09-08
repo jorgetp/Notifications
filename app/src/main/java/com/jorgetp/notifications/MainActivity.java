@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
         paint.setColor(0xFF000000);
         paint.setTextSize(60);
         paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-        canvas.drawText(firstLetter, 50, 65, paint);
+        canvas.drawText(firstLetter, 50, 70, paint);
         return bitmap;
     }
 
