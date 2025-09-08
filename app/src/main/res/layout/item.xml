@@ -3,26 +3,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="@dimen/sm"
-    android:layout_marginBottom="@dimen/normal"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginBottom="12dp"
     android:background="@drawable/card"
-    android:padding="@dimen/normal">
+    android:minHeight="68dp"
+    android:padding="12dp">
 
     <ImageView
-        android:id="@+id/ivSmallIcon"
-        android:layout_width="@dimen/xl"
-        android:layout_height="@dimen/xl"
-        android:layout_marginStart="@dimen/xs"
+        android:id="@+id/ivAppIcon"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:srcCompat="@android:drawable/sym_def_app_icon" />
 
     <ImageView
-        android:id="@+id/ivLargeIcon"
-        android:layout_width="@dimen/xl"
-        android:layout_height="@dimen/xl"
-        android:layout_marginEnd="@dimen/xs"
+        android:id="@+id/ivSenderIcon"
+        android:layout_width="38dp"
+        android:layout_height="38dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -31,12 +30,12 @@
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/normal"
-        android:layout_marginEnd="@dimen/normal"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/ivLargeIcon"
-        app:layout_constraintStart_toEndOf="@id/ivSmallIcon"
+        app:layout_constraintEnd_toStartOf="@id/ivSenderIcon"
+        app:layout_constraintStart_toEndOf="@id/ivAppIcon"
         app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
@@ -55,11 +54,10 @@
                 android:id="@+id/tvTime"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="@dimen/sm"
+                android:layout_marginStart="8dp"
                 android:text="Mon 11 Aug 2025 1:30 p.m."
                 android:textAlignment="textStart"
-                android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
-                android:textColor="?android:attr/textColorSecondary" />
+                android:textColor="?android:attr/textColorTertiary" />
         </LinearLayout>
 
         <TextView

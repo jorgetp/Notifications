@@ -1,11 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <dimen name="xs">4dp</dimen>
-    <dimen name="sm">8dp</dimen>
-    <dimen name="normal">12dp</dimen>
-    <dimen name="md">16dp</dimen>
-    <dimen name="mmd">18dp</dimen>
-    <dimen name="lg">24dp</dimen>
-    <dimen name="xl">40dp</dimen>
-    <dimen name="xxl">46dp</dimen>
-</resources>
+<resources></resources>
