@@ -6,9 +6,8 @@ import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
-import android.util.Log;
+import android.graphics.drawable.Drawable;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +23,6 @@ import com.jorgetp.notifications.R;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Map;
 
 public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapter.ViewHolder> {
@@ -36,25 +34,15 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         apps = new ArrayList<>(10);
 
         SharedPreferences prefs = NotificationService.getPrefs(context, SILENCED_APPS_PREFS);
-        PackageManager pm = context.getPackageManager();
-        HashMap<String, String> appNames = new HashMap<>();
         for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
             String packageName = entry.getKey();
             Integer silencedWhen = (Integer) entry.getValue();
             apps.add(new SilencedApp(packageName, silencedWhen));
-            try {
-                if (!appNames.containsKey(packageName)) {
-                    ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-                    CharSequence appName = pm.getApplicationLabel(appInfo);
-                    appNames.put(packageName, appName.toString().toLowerCase());
-                }
-            } catch (PackageManager.NameNotFoundException e) {
-                Log.e("SilencedAppsAdapter", "App not found", e);
-            }
         }
 
         // sort apps by app name
-        apps.sort(Comparator.comparing(app -> appNames.get(app.packageName)));
+        apps.sort(Comparator.comparing(app ->
+                NotificationService.getAppInfo(context, app.packageName).first.toString()));
     }
 
     @Override
@@ -79,24 +67,17 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int i) {
         SilencedApp app = apps.get(i);
 
-        holder.tvApp.setText(app.packageName);
-        holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+        // Load app name and icon
+        Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(context, app.packageName);
+        holder.tvApp.setText(appInfo.first);
+        if (appInfo.second != null)
+            holder.ivIcon.setImageDrawable(appInfo.second);
+        else
+            holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+
         holder.tvSilencedWhen.setText(app.silencedWhen == ALWAYS ?
                 context.getString(R.string.silenced_always) :
                 context.getString(R.string.silenced_non_business));
-
-        // Load app name and icon
-        try {
-            PackageManager pm = context.getApplicationContext().getPackageManager();
-            ApplicationInfo appInfo = pm.getApplicationInfo(app.packageName, 0);
-            CharSequence appName = pm.getApplicationLabel(appInfo);
-
-            holder.tvApp.setText(appName);
-            holder.ivIcon.setImageDrawable(pm.getApplicationIcon(appInfo));
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e("SilencedAppsAdapter", "App not found", e);
-        }
 
         holder.itemView.setOnClickListener(v -> {
             PopupMenu popup = new PopupMenu(context, v);

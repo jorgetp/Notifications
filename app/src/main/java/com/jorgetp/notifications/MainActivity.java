@@ -7,12 +7,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -333,7 +333,6 @@ public class MainActivity extends AppCompatActivity {
     private void loadAllNotifications() {
         ArrayList<JSONObject> notifications = new ArrayList<>(10);
         HashMap<String, String> packagesMap = new HashMap<>();
-        PackageManager pm = getPackageManager();
 
         for (Object n : notificationsPrefs.getAll().values()) {
             try {
@@ -341,16 +340,9 @@ public class MainActivity extends AppCompatActivity {
                 notifications.add(notification);
 
                 String packageName = notification.optString("package");
-                if (!packagesMap.containsKey(packageName)) {
-                    try {
-                        ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-                        CharSequence appName = pm.getApplicationLabel(appInfo).toString();
-                        packagesMap.put(packageName, appName.toString());
-                    } catch (Exception e) {
-                        Log.e("MainActivity", "App not found", e);
-                        packagesMap.put(packageName, packageName);
-                    }
-                }
+                Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(this, packageName);
+                packagesMap.put(packageName, appInfo.first.toString());
+
                 Log.d("NotificationsAdapter", "Notification loaded: " + notification);
 
             } catch (JSONException e) {

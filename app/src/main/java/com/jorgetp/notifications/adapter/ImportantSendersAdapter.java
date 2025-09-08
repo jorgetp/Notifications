@@ -4,12 +4,11 @@ import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -65,33 +64,27 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     @Override
     public void onBindViewHolder(@NonNull ImportantSendersAdapter.ViewHolder holder, int i) {
         ImportantSender sender = senders.get(i);
-        holder.tvSender.setText(sender.sender);
-        holder.ivIcon.setImageResource(R.drawable.outline_person_24);
-        holder.ivIconSecondary.setVisibility(View.GONE);
 
         // Load app name and icon
-        try {
-            PackageManager pm = context.getApplicationContext().getPackageManager();
-            ApplicationInfo appInfo = pm.getApplicationInfo(sender.packageName, 0);
-            Drawable appIcon = pm.getApplicationIcon(appInfo);
+        Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(context, sender.packageName);
+        holder.tvSender.setText(sender.sender);
+        if (appInfo.second != null) {
+            holder.ivIcon.setImageResource(R.drawable.outline_person_24);
+            holder.ivIconSecondary.setImageDrawable(appInfo.second);
+        } else {
+            holder.ivIcon.setImageResource(R.drawable.outline_person_24);
+            holder.ivIconSecondary.setImageResource(android.R.drawable.sym_def_app_icon);
+        }
 
-            holder.ivIcon.setImageDrawable(appIcon);
+        // Load sender icon from internal storage if it exists
+        try (FileInputStream fis = context
+                .openFileInput("notification_icon_" + sender.uuid + ".png")) {
+            Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
 
-            // load sender icon from internal storage if it exists
-            try (FileInputStream fis = context
-                    .openFileInput("notification_icon_" + sender.uuid + ".png")) {
-                Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
+            holder.ivIcon.setImageBitmap(iconBitmap);
 
-                holder.ivIcon.setImageBitmap(iconBitmap);
-                holder.ivIconSecondary.setVisibility(View.VISIBLE);
-                holder.ivIconSecondary.setImageDrawable(appIcon);
-
-            } catch (Exception e) {
-                Log.e("NotificationsAdapter", "Icon not found", e);
-            }
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e("ImportantSendersAdapter", "App not found", e);
+        } catch (Exception e) {
+            Log.e("NotificationsAdapter", "Icon not found", e);
         }
 
         holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(context)

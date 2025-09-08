@@ -10,16 +10,12 @@ import static com.jorgetp.notifications.MainActivity.toDate;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
-import android.net.Uri;
-import android.provider.Settings;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -82,7 +78,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         SharedPreferences silencedAppsPrefs = NotificationService.getPrefs(context, SILENCED_APPS_PREFS);
         SharedPreferences importantSendersPrefs = NotificationService.getPrefs(context, IMPORTANT_SENDERS_PREFS);
-        PackageManager pm = context.getApplicationContext().getPackageManager();
 
         String packageName = notification.optString("package");
         String title = notification.optString("title");
@@ -107,37 +102,33 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             }
         }
 
-        holder.tvApp.setText(packageName);
+        Pair<CharSequence, Drawable> appInfo = NotificationService.getAppInfo(context, packageName);
+
+        holder.tvApp.setText(appInfo.first);
         holder.tvTitle.setText(title);
         holder.tvText.setText(text);
         holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
-        holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+
+        if (appInfo.second != null) {
+            holder.ivIcon.setImageDrawable(appInfo.second);
+            holder.ivIconSecondary.setImageDrawable(appInfo.second);
+        } else {
+            holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+            holder.ivIconSecondary.setImageResource(android.R.drawable.sym_def_app_icon);
+        }
+
         holder.ivIconSecondary.setVisibility(View.GONE);
 
-        // Load app name and icon
-        try {
-            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-            CharSequence appName = pm.getApplicationLabel(appInfo);
-            holder.tvApp.setText(appName);
+        // Load icon from internal storage if it exists
+        try (FileInputStream fis = context
+                .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
+            Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
 
-            Drawable appIcon = pm.getApplicationIcon(appInfo);
-            holder.ivIcon.setImageDrawable(appIcon);
+            holder.ivIcon.setImageBitmap(iconBitmap);
+            holder.ivIconSecondary.setVisibility(View.VISIBLE);
 
-            // load icon from internal storage if it exists
-            try (FileInputStream fis = context
-                    .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
-                Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-
-                holder.ivIcon.setImageBitmap(iconBitmap);
-                holder.ivIconSecondary.setVisibility(View.VISIBLE);
-                holder.ivIconSecondary.setImageDrawable(appIcon);
-
-            } catch (Exception e) {
-                Log.e("NotificationsAdapter", "Icon not found", e);
-            }
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.e("NotificationsAdapter", "App not found", e);
+        } catch (Exception e) {
+            Log.e("NotificationsAdapter", "Icon not found", e);
         }
 
         // when item is clicked, show a menu with several options
@@ -169,17 +160,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                 } else if (itemId == R.id.view_full_text) {
                     fullText[position] = true;
                     notifyItemChanged(position);
-                    return true;
-
-                } else if (itemId == R.id.go_to_app) {
-                    Intent launchIntent = pm.getLaunchIntentForPackage(packageName);
-                    if (launchIntent != null) {
-                        context.startActivity(launchIntent);
-                    } else {
-                        Intent settingsIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                        settingsIntent.setData(Uri.parse("package:" + packageName));
-                        context.startActivity(settingsIntent);
-                    }
                     return true;
 
                 } else if (itemId == R.id.silence_app) {

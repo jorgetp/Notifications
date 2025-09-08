@@ -10,10 +10,6 @@
     </group>
     <group android:id="@+id/group_apps">
         <item
-            android:id="@+id/go_to_app"
-            android:title="@string/go_to_app"
-            android:visible="false" />
-        <item
             android:id="@+id/silence_app"
             android:title="@string/silence_app" />
         <item

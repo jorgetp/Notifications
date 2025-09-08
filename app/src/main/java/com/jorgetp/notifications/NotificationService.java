@@ -24,6 +24,7 @@ import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
+import android.util.Pair;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -51,6 +52,19 @@ public class NotificationService extends NotificationListenerService {
 
     public static SharedPreferences getPrefs(Context context, String name) {
         return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);
+    }
+
+    public static Pair<CharSequence, Drawable> getAppInfo(Context context, String packageName) {
+        try {
+            PackageManager pm = context.getApplicationContext().getPackageManager();
+            ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
+            CharSequence appName = pm.getApplicationLabel(appInfo);
+            return Pair.create(appName, pm.getApplicationIcon(appInfo));
+
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("NotificationService", "App not found", e);
+        }
+        return Pair.create(packageName, null);
     }
 
     @Override
@@ -255,28 +269,23 @@ public class NotificationService extends NotificationListenerService {
             builder.setLargeIcon(largeIcon);
         else {
             // set large icon as the original app icon
-            try {
-                PackageManager pm = getPackageManager();
-                ApplicationInfo appInfo = pm.getApplicationInfo(packageName, 0);
-                Drawable appIconDrawable = pm.getApplicationIcon(appInfo);
+            Pair<CharSequence, Drawable> appInfo = getAppInfo(getApplicationContext(), packageName);
+            if (appInfo.second != null) {
                 Bitmap iconBitmap;
-                if (appIconDrawable instanceof BitmapDrawable) {
-                    iconBitmap = ((BitmapDrawable) appIconDrawable).getBitmap();
+                if (appInfo.second instanceof BitmapDrawable) {
+                    iconBitmap = ((BitmapDrawable) appInfo.second).getBitmap();
                 } else {
                     // convert non-BitmapDrawable to Bitmap
                     iconBitmap = Bitmap.createBitmap(
-                            appIconDrawable.getIntrinsicWidth(),
-                            appIconDrawable.getIntrinsicHeight(),
+                            appInfo.second.getIntrinsicWidth(),
+                            appInfo.second.getIntrinsicHeight(),
                             Bitmap.Config.ARGB_8888);
                     Canvas canvas = new Canvas(iconBitmap);
-                    appIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                    appIconDrawable.draw(canvas);
+                    appInfo.second.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                    appInfo.second.draw(canvas);
                 }
 
                 builder.setLargeIcon(iconBitmap);
-
-            } catch (PackageManager.NameNotFoundException e) {
-                Log.e("NotificationService", "App not found", e);
             }
         }
 
