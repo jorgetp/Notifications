@@ -67,7 +67,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int i) {
         SilencedApp app = apps.get(i);
 
-        // Load app name and icon
+        // load app name and icon
         Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
         holder.tvApp.setText(appInfo.first);
         if (appInfo.second != null)

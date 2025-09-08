@@ -108,13 +108,13 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         holder.tvText.setText(text);
         holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 2);
 
-        // small icon
+        // app icon
         if (appInfo.second != null)
             holder.ivAppIcon.setImageDrawable(appInfo.second);
         else
             holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-        // large icon
+        // sender icon
         // holder.ivSenderIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
         holder.ivSenderIcon.setVisibility(View.GONE);
         try (FileInputStream fis = context
