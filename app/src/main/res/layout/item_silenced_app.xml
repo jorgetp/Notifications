@@ -17,7 +17,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
-            android:id="@+id/ivIcon"
+            android:id="@+id/ivLargeIcon"
             android:layout_width="@dimen/xl"
             android:layout_height="@dimen/xl"
             app:layout_constraintEnd_toEndOf="parent"

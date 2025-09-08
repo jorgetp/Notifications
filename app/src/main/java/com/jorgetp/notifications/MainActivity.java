@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static Bitmap createIconBitmap(String packageName, String sender) {
-        // create a tree set of colors based on the package name and sender
+        // create background color based on the package name and sender
         int hash = (packageName + sender).hashCode();
         int r = (hash >> 16) & 0xFF;
         int g = (hash >> 8) & 0xFF;
