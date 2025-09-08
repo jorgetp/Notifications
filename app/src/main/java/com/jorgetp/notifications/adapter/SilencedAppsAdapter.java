@@ -121,16 +121,11 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             ivIcon = itemView.findViewById(R.id.ivAppIcon);
-            tvApp = itemView.findViewById(R.id.tvApp);
+            tvApp = itemView.findViewById(R.id.tvTitle);
             tvSilencedWhen = itemView.findViewById(R.id.tvText);
 
-            TextView tvTitle = itemView.findViewById(R.id.tvTitle);
-            TextView tvTime = itemView.findViewById(R.id.tvTime);
-            ImageView ivLargeIcon = itemView.findViewById(R.id.ivSenderIcon);
-
-            tvTitle.setVisibility(View.GONE);
-            tvTime.setVisibility(View.GONE);
-            ivLargeIcon.setVisibility(View.GONE);
+            itemView.findViewById(R.id.tvTime).setVisibility(View.GONE);
+            itemView.findViewById(R.id.ivSenderIcon).setVisibility(View.GONE);
         }
     }
 

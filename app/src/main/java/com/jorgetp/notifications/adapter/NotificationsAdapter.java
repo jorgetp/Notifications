@@ -103,10 +103,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, packageName);
 
-        holder.tvApp.setText(appInfo.first);
         holder.tvTitle.setText(title);
         holder.tvText.setText(text);
-        holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 2);
+        holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
 
         // app icon
         if (appInfo.second != null)
@@ -181,7 +180,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     public static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView ivAppIcon;
         ImageView ivSenderIcon;
-        TextView tvApp;
         TextView tvTime;
         TextView tvTitle;
         TextView tvText;
@@ -190,7 +188,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             super(itemView);
             ivAppIcon = itemView.findViewById(R.id.ivAppIcon);
             ivSenderIcon = itemView.findViewById(R.id.ivSenderIcon);
-            tvApp = itemView.findViewById(R.id.tvApp);
             tvTime = itemView.findViewById(R.id.tvTime);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvText = itemView.findViewById(R.id.tvText);

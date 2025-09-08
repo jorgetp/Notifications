@@ -44,28 +44,24 @@
             android:orientation="horizontal">
 
             <TextView
-                android:id="@+id/tvApp"
+                android:id="@+id/tvTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="WhatsApp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="Sender"
                 android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvTime"
-                android:layout_width="match_parent"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Mon 11 Aug 2025 1:30 p.m."
-                android:textAlignment="textStart"
-                android:textColor="?android:attr/textColorTertiary" />
+                android:alpha="0.85"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text="1:30 PM" />
         </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sender"
-            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tvText"

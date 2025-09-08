@@ -113,12 +113,8 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             ivSenderIcon = itemView.findViewById(R.id.ivSenderIcon);
             tvSender = itemView.findViewById(R.id.tvTitle);
 
-            TextView tvApp = itemView.findViewById(R.id.tvApp);
-            TextView tvTime = itemView.findViewById(R.id.tvTime);
-            TextView tvTap = itemView.findViewById(R.id.tvText);
-            tvApp.setVisibility(View.GONE);
-            tvTime.setVisibility(View.GONE);
-            tvTap.setText(R.string.tap_to_unset_as_important);
+            itemView.findViewById(R.id.tvTime).setVisibility(View.GONE);
+            ((TextView) itemView.findViewById(R.id.tvText)).setText(R.string.tap_to_unset_as_important);
         }
     }
 
