@@ -57,7 +57,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="@dimen/sm"
                 android:text="Mon 11 Aug 2025 1:30 p.m."
-                android:textAlignment="textStart" />
+                android:textAlignment="textStart"
+                android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+                android:textColor="?android:attr/textColorSecondary" />
         </LinearLayout>
 
         <TextView
