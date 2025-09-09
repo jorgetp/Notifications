@@ -93,28 +93,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public static Bitmap createIconBitmap(String packageName, String sender) {
-        int lastIndex = sender.lastIndexOf(":");
-        String actualSender = lastIndex == -1 ? sender : sender.substring(lastIndex + 1).strip();
+        try {
+            int lastIndex = sender.lastIndexOf(":");
+            String actualSender = (lastIndex == -1 || lastIndex == sender.length() - 1) ?
+                    sender : sender.substring(lastIndex + 1).strip();
 
-        // create background color based on the package name and sender
-        int hash = (packageName + actualSender).hashCode();
-        int r = (hash >> 16) & 0xFF;
-        int g = (hash >> 8) & 0xFF;
-        int b = hash & 0xFF;
-        int color = 0xFF000000 | (r << 16) | (g << 8) | b;
+            // create background color based on the package name and sender
+            int hash = (packageName + actualSender).hashCode();
+            int r = (hash >> 16) & 0xFF;
+            int g = (hash >> 8) & 0xFF;
+            int b = hash & 0xFF;
+            int color = 0xFF000000 | (r << 16) | (g << 8) | b;
 
-        String firstLetter = actualSender.substring(0, 1).toUpperCase();
-        Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-        android.graphics.Paint paint = new android.graphics.Paint();
-        paint.setColor(color);
-        paint.setStyle(android.graphics.Paint.Style.FILL);
-        canvas.drawCircle(50, 50, 50, paint);
-        paint.setColor(0xFF000000);
-        paint.setTextSize(60);
-        paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-        canvas.drawText(firstLetter, 50, 70, paint);
-        return bitmap;
+            String firstLetter = actualSender.substring(0, 1).toUpperCase();
+            Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+            android.graphics.Paint paint = new android.graphics.Paint();
+            paint.setColor(color);
+            paint.setStyle(android.graphics.Paint.Style.FILL);
+            canvas.drawCircle(50, 50, 50, paint);
+            paint.setColor(0xFF000000);
+            paint.setTextSize(60);
+            paint.setTextAlign(android.graphics.Paint.Align.CENTER);
+            canvas.drawText(firstLetter, 50, 70, paint);
+            return bitmap;
+
+        } catch (Exception e) {
+            Log.e("MainActivity", "Error creating icon bitmap", e);
+            return null;
+        }
     }
 
     public static SharedPreferences getPrefs(Context context, String name) {
