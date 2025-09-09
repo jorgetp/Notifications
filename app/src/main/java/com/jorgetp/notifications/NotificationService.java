@@ -89,6 +89,7 @@ public class NotificationService extends NotificationListenerService {
             json.put("postTime", sbn.getPostTime());
             json.put("title", title);
             json.put("text", text != null ? text.toString() : null);
+            json.put("category", notification.category);
 
         } catch (JSONException e) {
             Log.e("NotificationService", "JSON error", e);

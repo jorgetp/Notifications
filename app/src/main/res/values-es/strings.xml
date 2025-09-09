@@ -25,4 +25,5 @@
     <string name="copied_text">Mensaje copiado</string>
     <string name="silenced_notification">%s (silenciada)</string>
     <string name="notifications_list_updated">Lista de notificaciones actualizada</string>
+    <string name="no_title">(Sin Titulo/Remitente)</string>
 </resources>

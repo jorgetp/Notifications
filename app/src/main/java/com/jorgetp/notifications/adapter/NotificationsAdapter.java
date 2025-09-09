@@ -7,6 +7,7 @@ import static com.jorgetp.notifications.MainActivity.isToday;
 import static com.jorgetp.notifications.MainActivity.isYesterday;
 import static com.jorgetp.notifications.MainActivity.toDate;
 
+import android.app.Notification;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -101,7 +102,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, packageName);
 
-        holder.tvTitle.setText(title);
+        holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
         holder.tvText.setText(text);
         holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
 
@@ -112,13 +113,25 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
         // sender icon
-        holder.ivSenderIcon.setImageBitmap(MainActivity.createIconBitmap(packageName, title));
-        // holder.ivSenderIcon.setVisibility(View.GONE);
+        holder.ivSenderIcon.setVisibility(View.GONE);
+        String category = notification.optString("category");
+        if (Notification.CATEGORY_MESSAGE.equals(category)
+                || Notification.CATEGORY_EMAIL.equals(category)
+                || Notification.CATEGORY_SOCIAL.equals(category)
+                || Notification.CATEGORY_CALL.equals(category)
+                || Notification.CATEGORY_MISSED_CALL.equals(category)) {
+            Bitmap bm = MainActivity.createIconBitmap(packageName, title);
+            if (bm != null) {
+                holder.ivSenderIcon.setImageBitmap(bm);
+                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+            }
+        }
+
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
             Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
             holder.ivSenderIcon.setImageBitmap(iconBitmap);
-            // holder.ivSenderIcon.setVisibility(View.VISIBLE);
+            holder.ivSenderIcon.setVisibility(View.VISIBLE);
         } catch (Exception e) {
             Log.e("NotificationsAdapter", "Icon not found", e);
         }
