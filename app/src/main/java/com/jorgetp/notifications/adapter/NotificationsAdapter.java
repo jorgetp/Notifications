@@ -67,7 +67,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     @NonNull
     @Override
     public NotificationsAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_notification_new,
+        View view = LayoutInflater.from(context).inflate(R.layout.item,
                 parent, false);
         return new NotificationsAdapter.ViewHolder(view);
     }
@@ -107,7 +107,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         holder.tvApp.setText(appInfo.first);
         holder.tvTitle.setText(title);
         holder.tvText.setText(text);
-        holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
+        holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 2);
 
         // small icon
         if (appInfo.second != null)
@@ -180,8 +180,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        ImageView ivLargeIcon;
         ImageView ivSmallIcon;
+        ImageView ivLargeIcon;
         TextView tvApp;
         TextView tvTime;
         TextView tvTitle;
@@ -189,8 +189,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
-            ivLargeIcon = itemView.findViewById(R.id.ivLargeIcon);
             ivSmallIcon = itemView.findViewById(R.id.ivSmallIcon);
+            ivLargeIcon = itemView.findViewById(R.id.ivLargeIcon);
             tvApp = itemView.findViewById(R.id.tvApp);
             tvTime = itemView.findViewById(R.id.tvTime);
             tvTitle = itemView.findViewById(R.id.tvTitle);
