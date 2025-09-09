@@ -81,8 +81,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         String packageName = notification.optString("package");
         String title = notification.optString("title");
         String text = notification.optString("text");
-        // String bigText = notification.optString("bigText");
-        // boolean hasBigText = !bigText.isEmpty() && !text.equals(bigText);
         boolean isSilencedApp = silencedAppsPrefs.contains(packageName);
         boolean isImportant = importantSendersPrefs.contains(packageName + "/" + title);
 
