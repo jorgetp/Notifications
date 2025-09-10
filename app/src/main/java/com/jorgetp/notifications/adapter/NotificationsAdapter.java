@@ -116,10 +116,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         holder.ivSenderIcon.setVisibility(View.GONE);
         String category = notification.optString("category");
         if (Notification.CATEGORY_MESSAGE.equals(category)
-                || Notification.CATEGORY_EMAIL.equals(category)
+                /*|| Notification.CATEGORY_EMAIL.equals(category)
                 || Notification.CATEGORY_SOCIAL.equals(category)
                 || Notification.CATEGORY_CALL.equals(category)
-                || Notification.CATEGORY_MISSED_CALL.equals(category)) {
+                || Notification.CATEGORY_MISSED_CALL.equals(category)*/) {
             Bitmap bm = MainActivity.createIconBitmap(packageName, title);
             if (bm != null) {
                 holder.ivSenderIcon.setImageBitmap(bm);
