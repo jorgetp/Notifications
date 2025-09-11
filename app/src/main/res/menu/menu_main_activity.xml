@@ -14,7 +14,7 @@
             android:icon="@drawable/outline_delete_24"
             android:title="@string/menu_delete_all_except_today" />
     </group>
-    <group android:id="@+id/group_apps">
+    <group android:id="@+id/group_settings">
         <item
             android:id="@+id/menu_silenced_apps"
             android:icon="@drawable/outline_notifications_off_24"
@@ -23,11 +23,9 @@
             android:id="@+id/menu_important_senders"
             android:icon="@drawable/outline_favorite_24"
             android:title="@string/important_senders" />
-    </group>
-    <!--<group android:id="@+id/group_general">
-        <item
+        <!--<item
             android:id="@+id/menu_settings"
             android:icon="@drawable/outline_settings_24"
-            android:title="@string/settings" />
-    </group>-->
+            android:title="@string/settings" />-->
+    </group>
 </menu>

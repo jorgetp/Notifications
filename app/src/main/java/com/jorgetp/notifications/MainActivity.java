@@ -213,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
             // refresh if new notifications were posted when app was paused
             refreshDataAndUI();
         } else if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
-            // refresh if at least 10 mins have elapsed from last pause
+            // refresh if 10 mins have elapsed from last pause
             selectedPackage = "all";
             refreshDataAndUI();
         }

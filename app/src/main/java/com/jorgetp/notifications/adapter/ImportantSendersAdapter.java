@@ -41,7 +41,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             String[] parts = key.split("/", 2);
             senders.add(new ImportantSender(parts[0], parts[1], value));
         }
-        senders.sort(Comparator.comparing(sender -> sender.sender));
+        senders.sort(Comparator.comparing(sender -> sender.sender.toLowerCase()));
     }
 
     @Override
@@ -90,12 +90,13 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
         holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(context)
                 .setMessage(R.string.unset_as_important_confirmation)
                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
+                    int position = holder.getBindingAdapterPosition();
                     MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS)
                             .edit()
                             .remove(sender.packageName + "/" + sender.sender)
                             .apply();
-                    senders.remove(holder.getBindingAdapterPosition());
-                    notifyItemRemoved(holder.getBindingAdapterPosition());
+                    senders.remove(position);
+                    notifyItemRemoved(position);
                 })
                 .setNegativeButton(android.R.string.cancel, null)
                 .create()

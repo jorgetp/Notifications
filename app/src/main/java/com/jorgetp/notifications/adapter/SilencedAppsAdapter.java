@@ -42,7 +42,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
 
         // sort apps by app name
         apps.sort(Comparator.comparing(app ->
-                MainActivity.getAppInfo(context, app.packageName).first.toString()));
+                MainActivity.getAppInfo(context, app.packageName).first.toString().toLowerCase()));
     }
 
     @Override

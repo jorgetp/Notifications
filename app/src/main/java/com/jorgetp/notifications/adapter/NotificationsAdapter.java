@@ -101,10 +101,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
         }
 
         Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, packageName);
+        int position = holder.getBindingAdapterPosition();
 
         holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
         holder.tvText.setText(text);
-        holder.tvText.setMaxLines(fullText[holder.getBindingAdapterPosition()] ? Integer.MAX_VALUE : 3);
+        holder.tvText.setMaxLines(fullText[position] ? Integer.MAX_VALUE : 3);
 
         // app icon
         if (appInfo.second != null)
@@ -146,8 +147,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
-                int position = holder.getBindingAdapterPosition();
-
                 if (itemId == R.id.copy_title) {
                     ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                     ClipData clip = ClipData.newPlainText("Notification title", title);

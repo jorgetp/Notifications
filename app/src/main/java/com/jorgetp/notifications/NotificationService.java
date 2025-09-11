@@ -244,8 +244,8 @@ public class NotificationService extends NotificationListenerService {
                 .setShowWhen(true)
                 .setWhen(postTime);
 
-        if (smallIcon != null)
-            builder.setSmallIcon(smallIcon);
+        /*if (smallIcon != null)
+            builder.setSmallIcon(smallIcon);*/
 
         if (largeIcon != null)
             builder.setLargeIcon(largeIcon);
