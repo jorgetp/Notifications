@@ -26,10 +26,12 @@ import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.TreeSet;
 
 public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSendersAdapter.ViewHolder> {
     private final Context context;
     private final ArrayList<ImportantSender> senders;
+    private final TreeSet<String> editedItems = new TreeSet<>();
 
     public ImportantSendersAdapter(Context context) {
         this.context = context;
@@ -42,6 +44,10 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             senders.add(new ImportantSender(parts[0], parts[1], value));
         }
         senders.sort(Comparator.comparing(sender -> sender.sender.toLowerCase()));
+    }
+
+    public TreeSet<String> getEditedItems() {
+        return editedItems;
     }
 
     @Override
@@ -91,6 +97,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
                 .setMessage(R.string.unset_as_important_confirmation)
                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                     int position = holder.getBindingAdapterPosition();
+                    editedItems.add(sender.packageName + "/" + sender.sender);
                     MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS)
                             .edit()
                             .remove(sender.packageName + "/" + sender.sender)

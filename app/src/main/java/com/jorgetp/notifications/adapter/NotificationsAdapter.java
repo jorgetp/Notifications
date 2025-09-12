@@ -142,8 +142,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             PopupMenu popup = new PopupMenu(context, v);
             popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
             MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
-            popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilencedApp);
-            popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);
+            popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
+            popup.getMenu().findItem(R.id.set_as_important).setEnabled(!isImportant);
 
             popup.setOnMenuItemClickListener(item -> {
                 int itemId = item.getItemId();
@@ -168,6 +168,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
                 } else if (itemId == R.id.silence_app) {
                     silencedAppsPrefs.edit().putInt(packageName, ALWAYS).apply();
+                    notifyItemChanged(position);
                     Toast.makeText(context, context.getString(R.string.silenced_always),
                             Toast.LENGTH_SHORT).show();
                     return true;
@@ -175,6 +176,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                 } else if (itemId == R.id.set_as_important) {
                     importantSendersPrefs.edit().putString(packageName + "/" + title,
                             notification.optString("uuid")).apply();
+                    notifyItemChanged(position);
                     Toast.makeText(context, context.getString(R.string.set_as_important),
                             Toast.LENGTH_SHORT).show();
                     return true;

@@ -1,8 +1,10 @@
 package com.jorgetp.notifications;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -13,7 +15,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jorgetp.notifications.adapter.ImportantSendersAdapter;
 import com.jorgetp.notifications.adapter.SilencedAppsAdapter;
 
+import java.util.TreeSet;
+
 public class ItemsActivity extends AppCompatActivity {
+    private RecyclerView.Adapter<?> adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,18 +31,34 @@ public class ItemsActivity extends AppCompatActivity {
             return insets;
         });
 
-        String adapter = getIntent().getStringExtra("adapter");
+        String adapterType = getIntent().getStringExtra("adapter");
         RecyclerView rvItems = findViewById(R.id.rvItems);
-        if (rvItems != null && adapter != null) {
+        if (rvItems != null && adapterType != null) {
             rvItems.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-            if (adapter.equals(SilencedAppsAdapter.class.getSimpleName())) {
+            if (adapterType.equals(SilencedAppsAdapter.class.getSimpleName())) {
                 setTitle(R.string.silenced_apps);
-                rvItems.setAdapter(new SilencedAppsAdapter(this));
+                rvItems.setAdapter(adapter = new SilencedAppsAdapter(this));
 
-            } else if (adapter.equals(ImportantSendersAdapter.class.getSimpleName())) {
+            } else if (adapterType.equals(ImportantSendersAdapter.class.getSimpleName())) {
                 setTitle(R.string.important_senders);
-                rvItems.setAdapter(new ImportantSendersAdapter(this));
+                rvItems.setAdapter(adapter = new ImportantSendersAdapter(this));
             }
         }
+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Intent resultIntent = new Intent();
+                TreeSet<String> editedItems = new TreeSet<>();
+                if (adapter instanceof SilencedAppsAdapter) {
+                    editedItems = ((SilencedAppsAdapter) adapter).getEditedItems();
+                } else if (adapter instanceof ImportantSendersAdapter) {
+                    editedItems = ((ImportantSendersAdapter) adapter).getEditedItems();
+                }
+                resultIntent.putExtra("edited_items", editedItems);
+                setResult(RESULT_OK, resultIntent);
+                finish();
+            }
+        });
     }
 }

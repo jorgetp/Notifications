@@ -24,10 +24,12 @@ import com.jorgetp.notifications.R;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.TreeSet;
 
 public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapter.ViewHolder> {
     private final Context context;
     private final ArrayList<SilencedApp> apps;
+    private final TreeSet<String> editedItems = new TreeSet<>();
 
     public SilencedAppsAdapter(Context context) {
         this.context = context;
@@ -43,6 +45,10 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
         // sort apps by app name
         apps.sort(Comparator.comparing(app ->
                 MainActivity.getAppInfo(context, app.packageName).first.toString().toLowerCase()));
+    }
+
+    public TreeSet<String> getEditedItems() {
+        return editedItems;
     }
 
     @Override
@@ -89,18 +95,21 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
                 int position = holder.getBindingAdapterPosition();
 
                 if (itemId == R.id.silenced_always) {
+                    editedItems.add(app.packageName);
                     prefs.edit().putInt(app.packageName, ALWAYS).apply();
                     apps.set(position, new SilencedApp(app.packageName, ALWAYS));
                     notifyItemChanged(position);
                     return true;
 
                 } else if (itemId == R.id.silenced_non_business) {
+                    editedItems.add(app.packageName);
                     prefs.edit().putInt(app.packageName, NON_BUSINESS).apply();
                     apps.set(position, new SilencedApp(app.packageName, NON_BUSINESS));
                     notifyItemChanged(position);
                     return true;
 
                 } else if (itemId == R.id.not_silenced) {
+                    editedItems.add(app.packageName);
                     prefs.edit().remove(app.packageName).apply();
                     apps.remove(position);
                     notifyItemRemoved(position);

@@ -22,6 +22,8 @@ import android.view.MenuItem;
 import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -41,6 +43,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.AbstractMap;
@@ -52,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
@@ -71,6 +75,15 @@ public class MainActivity extends AppCompatActivity {
     private NotificationsAdapter notificationsAdapter;
     private AllNotifications allNotifications;
     private String selectedPackage = "all";
+
+    private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Serializable editedItems = result.getData().getSerializableExtra("edited_items");
+                    if (editedItems instanceof TreeSet)
+                        refreshDataAndUI();
+                }
+            });
 
     public static Date toDate(long timestamp) {
         try {
@@ -346,13 +359,13 @@ public class MainActivity extends AppCompatActivity {
         } else if (itemId == R.id.menu_silenced_apps) {
             Intent intent = new Intent(this, ItemsActivity.class);
             intent.putExtra("adapter", SilencedAppsAdapter.class.getSimpleName());
-            startActivity(intent);
+            launcher.launch(intent);
             return true;
 
         } else if (itemId == R.id.menu_important_senders) {
             Intent intent = new Intent(this, ItemsActivity.class);
             intent.putExtra("adapter", ImportantSendersAdapter.class.getSimpleName());
-            startActivity(intent);
+            launcher.launch(intent);
             return true;
 
         }
