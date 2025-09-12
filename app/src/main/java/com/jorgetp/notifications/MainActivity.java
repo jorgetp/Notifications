@@ -105,6 +105,12 @@ public class MainActivity extends AppCompatActivity {
         return givenDate.equals(yesterday);
     }
 
+    public static boolean isThisYear(Date date) {
+        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate today = LocalDate.now();
+        return givenDate.getYear() == today.getYear();
+    }
+
     public static Bitmap createIconBitmap(String packageName, String sender) {
         try {
             int lastIndex = sender.lastIndexOf(":");

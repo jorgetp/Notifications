@@ -3,6 +3,7 @@ package com.jorgetp.notifications.adapter;
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
+import static com.jorgetp.notifications.MainActivity.isThisYear;
 import static com.jorgetp.notifications.MainActivity.isToday;
 import static com.jorgetp.notifications.MainActivity.isYesterday;
 import static com.jorgetp.notifications.MainActivity.toDate;
@@ -43,7 +44,7 @@ import java.util.Locale;
 public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdapter.ViewHolder> {
     private final Context context;
     private ArrayList<JSONObject> notifications = new ArrayList<>();
-    private boolean[] fullText;
+    private boolean[] isExpanded;
 
     public NotificationsAdapter(Context context) {
         this.context = context;
@@ -51,7 +52,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
     public void updateData(ArrayList<JSONObject> newNotifications) {
         this.notifications = newNotifications;
-        fullText = new boolean[newNotifications.size()];
+        isExpanded = new boolean[newNotifications.size()];
         notifyDataSetChanged();
     }
 
@@ -94,8 +95,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
             } else if (isYesterday(date)) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
                 holder.tvTime.setText(context.getString(R.string.yesterday, sdf.format(date)));
+            } else if (isThisYear(date)) {
+                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, h:mm a", Locale.getDefault());
+                holder.tvTime.setText(sdf.format(date));
             } else {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MMMM/yyyy h:mm a", Locale.getDefault());
+                SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, yyyy, h:mm a", Locale.getDefault());
                 holder.tvTime.setText(sdf.format(date));
             }
         }
@@ -105,7 +109,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
 
         holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
         holder.tvText.setText(text);
-        holder.tvText.setMaxLines(fullText[position] ? Integer.MAX_VALUE : 3);
+        holder.tvText.setMaxLines(isExpanded[position] ? Integer.MAX_VALUE : 3);
 
         // app icon
         if (appInfo.second != null)
@@ -122,10 +126,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                 || Notification.CATEGORY_CALL.equals(category)
                 || Notification.CATEGORY_MISSED_CALL.equals(category)*/) {
             Bitmap bm = MainActivity.createIconBitmap(packageName, title);
-            if (bm != null) {
+            if (bm != null)
                 holder.ivSenderIcon.setImageBitmap(bm);
-                holder.ivSenderIcon.setVisibility(View.VISIBLE);
-            }
+            holder.ivSenderIcon.setVisibility(View.VISIBLE);
         }
 
         try (FileInputStream fis = context
@@ -161,8 +164,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<NotificationsAdap
                     Toast.makeText(context, R.string.copied_text, Toast.LENGTH_SHORT).show();
                     return true;
 
-                } else if (itemId == R.id.view_full_text) {
-                    fullText[position] = true;
+                } else if (itemId == R.id.expand) {
+                    isExpanded[position] = true;
                     notifyItemChanged(position);
                     return true;
 

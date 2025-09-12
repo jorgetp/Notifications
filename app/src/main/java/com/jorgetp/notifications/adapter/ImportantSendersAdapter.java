@@ -82,7 +82,6 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
         // sender icon
-        // holder.ivSenderIcon.setImageBitmap(MainActivity.createIconBitmap(sender.packageName, sender.sender));
         holder.ivSenderIcon.setVisibility(View.GONE);
         try (FileInputStream fis = context
                 .openFileInput("notification_icon_" + sender.uuid + ".png")) {

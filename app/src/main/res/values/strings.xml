@@ -18,7 +18,7 @@
     <string name="important_senders">Important senders</string>
     <string name="yesterday">Yesterday %s</string>
     <string name="all">All</string>
-    <string name="view_full_text">View full text</string>
+    <string name="expand">Expand</string>
     <string name="unset_as_important_confirmation">Are you sure you want to unset sender as important?</string>
     <string name="settings">Settings</string>
     <string name="copied_title">Copied title</string>
@@ -26,20 +26,4 @@
     <string name="silenced_notification">%s (silenced)</string>
     <string name="notifications_list_updated">Updated list of notifications</string>
     <string name="no_title">(No Title/Sender)</string>
-    <string name="title_activity_settings">SettingsActivity</string>
-
-    <!-- Preference Titles -->
-    <string name="messages_header">Messages</string>
-    <string name="sync_header">Sync</string>
-
-    <!-- Messages Preferences -->
-    <string name="signature_title">Your signature</string>
-    <string name="reply_title">Default reply action</string>
-
-    <!-- Sync Preferences -->
-    <string name="sync_title">Sync email periodically</string>
-    <string name="attachment_title">Download incoming attachments</string>
-    <string name="attachment_summary_on">Automatically download attachments for incoming emails
-    </string>
-    <string name="attachment_summary_off">Only download attachments when manually requested</string>
 </resources>

@@ -18,7 +18,7 @@
     </group>
     <group android:id="@+id/group_general">
         <item
-            android:id="@+id/view_full_text"
-            android:title="@string/view_full_text" />
+            android:id="@+id/expand"
+            android:title="@string/expand" />
     </group>
 </menu>
