@@ -1,5 +1,8 @@
 package com.jorgetp.notifications;
 
+import static com.jorgetp.notifications.adapter.NotificationsAdapter.isToday;
+import static com.jorgetp.notifications.adapter.NotificationsAdapter.toDate;
+
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -9,7 +12,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -44,8 +46,6 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.Serializable;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -84,71 +84,6 @@ public class MainActivity extends AppCompatActivity {
                         refreshDataAndUI();
                 }
             });
-
-    public static Date toDate(long timestamp) {
-        try {
-            return new Date(timestamp);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    public static boolean isToday(Date date) {
-        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate today = LocalDate.now();
-        return givenDate.equals(today);
-    }
-
-    public static boolean isYesterday(Date date) {
-        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        return givenDate.equals(yesterday);
-    }
-
-    public static boolean isThisYear(Date date) {
-        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate today = LocalDate.now();
-        return givenDate.getYear() == today.getYear();
-    }
-
-    public static Bitmap createIconBitmap(String packageName, String sender) {
-        try {
-            int lastIndex = sender.lastIndexOf(":");
-            String actualSender = (lastIndex == -1 || lastIndex == sender.length() - 1) ?
-                    sender : sender.substring(lastIndex + 1).strip();
-
-            // continue only if first char is a letter
-            if (Character.isLetter(actualSender.charAt(0))) {
-                // create colored circle
-                int hash = (packageName + actualSender).hashCode();
-                int r = (hash >> 16) & 0xFF;
-                int g = (hash >> 8) & 0xFF;
-                int b = hash & 0xFF;
-                int color = 0xFF000000 | (r << 16) | (g << 8) | b;
-
-                Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
-                android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-                android.graphics.Paint paint = new android.graphics.Paint();
-                paint.setColor(color);
-                paint.setStyle(android.graphics.Paint.Style.FILL);
-                canvas.drawCircle(50, 50, 50, paint);
-                paint.setColor(0xFF000000);
-                paint.setTextSize(60);
-                paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-
-                // write first letter in circle
-                String firstLetter = actualSender.substring(0, 1).toUpperCase();
-                canvas.drawText(firstLetter, 50, 70, paint);
-
-                return bitmap;
-            }
-
-        } catch (Exception e) {
-            Log.e("MainActivity", "Error creating icon bitmap", e);
-        }
-
-        return null;
-    }
 
     public static SharedPreferences getPrefs(Context context, String name) {
         return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);

@@ -16,7 +16,8 @@
     <string name="tap_to_unset_as_important">Tap to unset as important</string>
     <string name="unset_as_important">Unset as important</string>
     <string name="important_senders">Important senders</string>
-    <string name="yesterday">Yesterday %s</string>
+    <string name="today">Today</string>
+    <string name="yesterday">Yesterday</string>
     <string name="all">All</string>
     <string name="expand">Expand</string>
     <string name="unset_as_important_confirmation">Are you sure you want to unset sender as important?</string>

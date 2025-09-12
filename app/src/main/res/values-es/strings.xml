@@ -16,7 +16,8 @@
     <string name="tap_to_unset_as_important">Toca para desmarcar como importante</string>
     <string name="unset_as_important">Desmarcar como importante</string>
     <string name="important_senders">Remitentes importantes</string>
-    <string name="yesterday">Ayer %s</string>
+    <string name="today">Hoy</string>
+    <string name="yesterday">Ayer</string>
     <string name="all">Todo</string>
     <string name="expand">Expandir</string>
     <string name="unset_as_important_confirmation">¿Estás seguro de que deseas desmarcar al remitente como importante?</string>
