@@ -10,8 +10,6 @@
         android:id="@+id/tvDay"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:text="Today"
-        android:textAlignment="textStart"
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

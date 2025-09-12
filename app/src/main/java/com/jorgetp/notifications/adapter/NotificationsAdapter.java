@@ -50,7 +50,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         this.context = context;
     }
 
-
     public static boolean isSameDay(Date date1, Date date2) {
         Calendar cal1 = Calendar.getInstance();
         cal1.setTime(date1);
@@ -123,15 +122,13 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         items.clear();
         if (!newNotifications.isEmpty()) {
             for (int i = 0; i < newNotifications.size(); i++) {
-                boolean sameDay = false;
+                boolean addHeader = true;
                 Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
                 if (i > 0) {
                     Date previousDate = toDate(newNotifications.get(i - 1).optLong("postTime"));
-                    sameDay = isSameDay(previousDate, currentDate);
+                    addHeader = !isSameDay(previousDate, currentDate);
                 }
-                if (sameDay) {
-                    items.add(newNotifications.get(i));
-                } else {
+                if (addHeader) {
                     try {
                         JSONObject header = new JSONObject();
                         header.put("header", dateToHeader(currentDate));
@@ -139,8 +136,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     } catch (JSONException e) {
                         Log.e("NotificationsAdapter", "Error creating header", e);
                     }
-                    items.add(newNotifications.get(i));
                 }
+                items.add(newNotifications.get(i));
             }
         }
         isExpanded = new boolean[items.size()];
