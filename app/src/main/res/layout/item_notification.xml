@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:background="@drawable/rounded_all"
-    android:minHeight="72dp"
+    android:minHeight="64dp"
     android:padding="12dp">
 
     <ImageView
