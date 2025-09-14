@@ -5,7 +5,7 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="8dp"
     android:layout_marginTop="12dp"
-    android:background="@drawable/card"
+    android:background="@drawable/rounded_all"
     android:padding="12dp">
 
     <ImageView
@@ -50,16 +50,6 @@
                 android:maxLines="1"
                 android:text="Sender"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvTime"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:alpha="0.85"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="1:30 PM" />
         </LinearLayout>
 
         <TextView
@@ -67,7 +57,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:text="Hello, how are you doing today?" />
+            android:text="@string/tap_to_unset_as_important" />
     </LinearLayout>
 
 

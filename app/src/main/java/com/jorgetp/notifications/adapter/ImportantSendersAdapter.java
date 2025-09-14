@@ -63,7 +63,7 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
     @NonNull
     @Override
     public ImportantSendersAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_important_sender, parent, false);
         return new ImportantSendersAdapter.ViewHolder(view);
     }
 
@@ -119,9 +119,6 @@ public class ImportantSendersAdapter extends RecyclerView.Adapter<ImportantSende
             ivAppIcon = itemView.findViewById(R.id.ivAppIcon);
             ivSenderIcon = itemView.findViewById(R.id.ivSenderIcon);
             tvSender = itemView.findViewById(R.id.tvTitle);
-
-            itemView.findViewById(R.id.tvTime).setVisibility(View.GONE);
-            ((TextView) itemView.findViewById(R.id.tvText)).setText(R.string.tap_to_unset_as_important);
         }
     }
 

@@ -65,7 +65,7 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
     @NonNull
     @Override
     public SilencedAppsAdapter.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_silenced_app, parent, false);
         return new SilencedAppsAdapter.ViewHolder(view);
     }
 
@@ -132,9 +132,6 @@ public class SilencedAppsAdapter extends RecyclerView.Adapter<SilencedAppsAdapte
             ivIcon = itemView.findViewById(R.id.ivAppIcon);
             tvApp = itemView.findViewById(R.id.tvTitle);
             tvSilencedWhen = itemView.findViewById(R.id.tvText);
-
-            itemView.findViewById(R.id.tvTime).setVisibility(View.GONE);
-            itemView.findViewById(R.id.ivSenderIcon).setVisibility(View.GONE);
         }
     }
 
