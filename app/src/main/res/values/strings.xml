@@ -3,7 +3,6 @@
     <string name="enable_as_nsl">Enable as notification service</string>
     <string name="menu_delete_all_except_today">Delete all except today</string>
     <string name="menu_delete_all_except_today_confirmation">Are you sure you want to delete all notifications except today?</string>
-    <string name="go_to_app">Go to app</string>
     <string name="copy_title">Copy sender</string>
     <string name="copy_text">Copy message</string>
     <string name="notifications_deleted">Notifications deleted</string>
@@ -25,6 +24,5 @@
     <string name="copied_title">Copied title</string>
     <string name="copied_text">Copied text</string>
     <string name="silenced_notification">%s (silenced)</string>
-    <string name="notifications_list_updated">Updated list of notifications</string>
     <string name="no_title">(No Title/Sender)</string>
 </resources>
