@@ -44,8 +44,6 @@ import java.util.Locale;
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Context context;
     private final ArrayList<JSONObject> items = new ArrayList<>();
-    private boolean[] isExpanded;
-    private int[] itemBackground;
 
     public NotificationsAdapter(Context context) {
         this.context = context;
@@ -141,22 +139,24 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 items.add(newNotifications.get(i));
             }
         }
-        isExpanded = new boolean[items.size()];
 
-        itemBackground = new int[items.size()];
-        for (int i = 0; i < items.size(); i++) {
-            if (items.get(i).optString("header", "").isEmpty()) {
-                boolean isAfterHeader = i == 1 || !items.get(i - 1).optString("header", "").isEmpty();
-                boolean isBeforeHeader = i == items.size() - 1 || !items.get(i + 1).optString("header", "").isEmpty();
-                if (isBeforeHeader && isAfterHeader)
-                    itemBackground[i] = R.drawable.rounded_all;
-                else if (isBeforeHeader)
-                    itemBackground[i] = R.drawable.rounded_bottom;
-                else if (isAfterHeader)
-                    itemBackground[i] = R.drawable.rounded_top;
-                else
-                    itemBackground[i] = R.drawable.rounded_none;
+        try {
+            for (int i = 0; i < items.size(); i++) {
+                if (items.get(i).optString("header", "").isEmpty()) {
+                    boolean isAfterHeader = i == 1 || !items.get(i - 1).optString("header", "").isEmpty();
+                    boolean isBeforeHeader = i == items.size() - 1 || !items.get(i + 1).optString("header", "").isEmpty();
+                    if (isBeforeHeader && isAfterHeader)
+                        items.get(i).put("background", R.drawable.rounded_all);
+                    else if (isBeforeHeader)
+                        items.get(i).put("background", R.drawable.rounded_bottom);
+                    else if (isAfterHeader)
+                        items.get(i).put("background", R.drawable.rounded_top);
+                    else
+                        items.get(i).put("background", R.drawable.rounded_none);
+                }
             }
+        } catch (JSONException e) {
+            Log.e("NotificationsAdapter", "Error setting item backgrounds", e);
         }
         notifyDataSetChanged();
     }
@@ -181,11 +181,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         if (viewType == 0) { // header
             View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_header, parent, false);
+                    .inflate(R.layout.header, parent, false);
             return new HeaderViewHolder(view);
         } else { // item
             View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_notification, parent, false);
+                    .inflate(R.layout.item, parent, false);
             return new ItemViewHolder(view);
         }
     }
@@ -209,12 +209,17 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         if (holderGeneric instanceof HeaderViewHolder) {
             HeaderViewHolder holder = (HeaderViewHolder) holderGeneric;
             JSONObject header = items.get(i);
-            holder.tvDay.setText(header.optString("header"));
+            holder.tvHeader.setText(header.optString("header"));
 
         } else {
             JSONObject notification = items.get(i);
             ItemViewHolder holder = (ItemViewHolder) holderGeneric;
-            holder.itemView.setBackgroundResource(itemBackground[i]);
+
+            int itemBackground = notification.optInt("background", R.drawable.rounded_none);
+            holder.itemView.setBackgroundResource(itemBackground);
+            holder.divider.setVisibility(
+                    (itemBackground == R.drawable.rounded_top || itemBackground == R.drawable.rounded_none)
+                            ? View.VISIBLE : View.GONE);
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
@@ -237,7 +242,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
             holder.tvText.setText(text);
-            holder.tvText.setMaxLines(isExpanded[position] ? Integer.MAX_VALUE : 3);
+            holder.tvText.setMaxLines(notification.optBoolean("isExpanded", false) ? Integer.MAX_VALUE : 3);
 
             // app icon
             if (appInfo.second != null)
@@ -265,7 +270,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
             } catch (Exception e) {
-                Log.e("NotificationsAdapter", "Icon not found", e);
+                // Log.e("NotificationsAdapter", "Icon not found", e);
             }
 
             // when item is clicked, show a menu with several options
@@ -293,7 +298,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         return true;
 
                     } else if (itemId == R.id.expand) {
-                        isExpanded[position] = true;
+                        try {
+                            notification.put("isExpanded", true);
+                        } catch (JSONException e) {
+                            Log.e("NotificationsAdapter", "Error expanding notification", e);
+                        }
                         notifyItemChanged(position);
                         return true;
 
@@ -327,6 +336,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         TextView tvTime;
         TextView tvTitle;
         TextView tvText;
+        View divider;
 
         public ItemViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -335,15 +345,16 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             tvTime = itemView.findViewById(R.id.tvTime);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvText = itemView.findViewById(R.id.tvText);
+            divider = itemView.findViewById(R.id.divider);
         }
     }
 
     public static class HeaderViewHolder extends RecyclerView.ViewHolder {
-        TextView tvDay;
+        TextView tvHeader;
 
         public HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvDay = itemView.findViewById(R.id.tvDay);
+            tvHeader = itemView.findViewById(R.id.tvHeader);
         }
     }
 }

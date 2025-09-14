@@ -16,16 +16,8 @@
     </group>
     <group android:id="@+id/group_settings">
         <item
-            android:id="@+id/menu_silenced_apps"
-            android:icon="@drawable/outline_notifications_off_24"
-            android:title="@string/silenced_apps" />
-        <item
-            android:id="@+id/menu_important_senders"
-            android:icon="@drawable/outline_favorite_24"
-            android:title="@string/important_senders" />
-        <!--<item
             android:id="@+id/menu_settings"
             android:icon="@drawable/outline_settings_24"
-            android:title="@string/settings" />-->
+            android:title="@string/settings" />
     </group>
 </menu>

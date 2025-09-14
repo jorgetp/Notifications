@@ -37,9 +37,7 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jorgetp.notifications.adapter.ImportantSendersAdapter;
 import com.jorgetp.notifications.adapter.NotificationsAdapter;
-import com.jorgetp.notifications.adapter.SilencedAppsAdapter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -297,16 +295,8 @@ public class MainActivity extends AppCompatActivity {
                     .show();
             return true;
 
-        } else if (itemId == R.id.menu_silenced_apps) {
-            Intent intent = new Intent(this, ItemsActivity.class);
-            intent.putExtra("adapter", SilencedAppsAdapter.class.getSimpleName());
-            launcher.launch(intent);
-            return true;
-
-        } else if (itemId == R.id.menu_important_senders) {
-            Intent intent = new Intent(this, ItemsActivity.class);
-            intent.putExtra("adapter", ImportantSendersAdapter.class.getSimpleName());
-            launcher.launch(intent);
+        } else if (itemId == R.id.menu_settings) {
+            launcher.launch(new Intent(this, SettingsActivity.class));
             return true;
 
         }

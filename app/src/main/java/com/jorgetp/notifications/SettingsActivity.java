@@ -12,49 +12,34 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.jorgetp.notifications.adapter.ImportantSendersAdapter;
-import com.jorgetp.notifications.adapter.SilencedAppsAdapter;
+import com.jorgetp.notifications.adapter.SettingsAdapter;
 
 import java.util.TreeSet;
 
-public class ItemsActivity extends AppCompatActivity {
-    private RecyclerView.Adapter<?> adapter;
+public class SettingsActivity extends AppCompatActivity {
+    private SettingsAdapter adapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
-        setContentView(R.layout.activity_items);
+        setContentView(R.layout.activity_settings);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
 
-        String adapterType = getIntent().getStringExtra("adapter");
         RecyclerView rvItems = findViewById(R.id.rvItems);
-        if (rvItems != null && adapterType != null) {
-            rvItems.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false));
-            if (adapterType.equals(SilencedAppsAdapter.class.getSimpleName())) {
-                setTitle(R.string.silenced_apps);
-                rvItems.setAdapter(adapter = new SilencedAppsAdapter(this));
-
-            } else if (adapterType.equals(ImportantSendersAdapter.class.getSimpleName())) {
-                setTitle(R.string.important_senders);
-                rvItems.setAdapter(adapter = new ImportantSendersAdapter(this));
-            }
-        }
+        LinearLayoutManager lm = new LinearLayoutManager(this);
+        rvItems.setLayoutManager(lm);
+        rvItems.setAdapter(adapter = new SettingsAdapter(this));
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 Intent resultIntent = new Intent();
-                TreeSet<String> editedItems = new TreeSet<>();
-                if (adapter instanceof SilencedAppsAdapter) {
-                    editedItems = ((SilencedAppsAdapter) adapter).getEditedItems();
-                } else if (adapter instanceof ImportantSendersAdapter) {
-                    editedItems = ((ImportantSendersAdapter) adapter).getEditedItems();
-                }
+                TreeSet<String> editedItems = adapter.getEditedItems();
                 resultIntent.putExtra("edited_items", editedItems);
                 setResult(RESULT_OK, resultIntent);
                 finish();
