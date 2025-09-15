@@ -52,16 +52,6 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                 MainActivity.getAppInfo(context, app.packageName).first.toString().toLowerCase()));
 
         items.add(context.getString(R.string.silenced_apps));
-        for (int i = 0; i < apps.size(); i++) {
-            if (i == 0 && i == apps.size() - 1)
-                apps.get(i).setBackground(R.drawable.rounded_all);
-            else if (i == 0)
-                apps.get(i).setBackground(R.drawable.rounded_top);
-            else if (i == apps.size() - 1)
-                apps.get(i).setBackground(R.drawable.rounded_bottom);
-            else
-                apps.get(i).setBackground(R.drawable.rounded_none);
-        }
         items.addAll(apps);
 
         // important senders
@@ -76,17 +66,28 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         senders.sort(Comparator.comparing(sender -> sender.sender.toLowerCase()));
 
         items.add(context.getString(R.string.important_senders));
-        for (int i = 0; i < senders.size(); i++) {
-            if (i == 0 && i == senders.size() - 1)
-                senders.get(i).setBackground(R.drawable.rounded_all);
-            else if (i == 0)
-                senders.get(i).setBackground(R.drawable.rounded_top);
-            else if (i == senders.size() - 1)
-                senders.get(i).setBackground(R.drawable.rounded_bottom);
-            else
-                senders.get(i).setBackground(R.drawable.rounded_none);
-        }
         items.addAll(senders);
+    }
+
+    public static int getBackground(ArrayList<Object> items, int position) {
+        boolean afterHeader = isAfterHeader(items, position);
+        boolean beforeHeader = isBeforeHeader(items, position);
+        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
+        if (afterHeader) return R.drawable.rounded_top;
+        if (beforeHeader) return R.drawable.rounded_bottom;
+        return R.drawable.rounded_none;
+    }
+
+    public static boolean isAfterHeader(ArrayList<Object> items, int position) {
+        return position == 0 || (position > 0 && items.get(position - 1) instanceof String);
+    }
+
+    public static boolean isBeforeHeader(ArrayList<Object> items, int position) {
+        return position == items.size() - 1 || (position + 1 < items.size() && items.get(position + 1) instanceof String);
+    }
+
+    public static boolean isDividerVisible(ArrayList<Object> items, int position) {
+        return !isBeforeHeader(items, position);
     }
 
     public TreeSet<String> getEditedItems() {
@@ -137,10 +138,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             SilencedAppViewHolder holder = (SilencedAppViewHolder) holderGeneric;
 
             SilencedApp app = (SilencedApp) items.get(i);
-            holder.itemView.setBackgroundResource(app.background);
-            holder.divider.setVisibility(
-                    (app.background == R.drawable.rounded_top || app.background == R.drawable.rounded_none)
-                            ? View.VISIBLE : View.GONE);
+            holder.itemView.setBackgroundResource(getBackground(items, i));
+            holder.divider.setVisibility(isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
@@ -166,18 +165,14 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                     if (itemId == R.id.silenced_always) {
                         editedItems.add(app.packageName);
                         prefs.edit().putInt(app.packageName, ALWAYS).apply();
-                        SilencedApp newItem = new SilencedApp(app.packageName, ALWAYS);
-                        newItem.setBackground(app.background);
-                        items.set(position, newItem);
+                        items.set(position, new SilencedApp(app.packageName, ALWAYS));
                         notifyItemChanged(position);
                         return true;
 
                     } else if (itemId == R.id.silenced_non_business) {
                         editedItems.add(app.packageName);
                         prefs.edit().putInt(app.packageName, NON_BUSINESS).apply();
-                        SilencedApp newItem = new SilencedApp(app.packageName, NON_BUSINESS);
-                        newItem.setBackground(app.background);
-                        items.set(position, newItem);
+                        items.set(position, new SilencedApp(app.packageName, NON_BUSINESS));
                         notifyItemChanged(position);
                         return true;
 
@@ -185,8 +180,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                         editedItems.add(app.packageName);
                         prefs.edit().remove(app.packageName).apply();
                         items.remove(position);
-                        //notifyItemRemoved(position);
-                        notifyDataSetChanged();
+                        // notifyDataSetChanged();
+                        if (position > 0)
+                            notifyItemChanged(position - 1);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, getItemCount() - position);
                         return true;
                     }
                     return false;
@@ -199,10 +197,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ImportantSenderViewHolder holder = (ImportantSenderViewHolder) holderGeneric;
 
             ImportantSender sender = (ImportantSender) items.get(i);
-            holder.itemView.setBackgroundResource(sender.background);
-            holder.divider.setVisibility(
-                    (sender.background == R.drawable.rounded_top || sender.background == R.drawable.rounded_none)
-                            ? View.VISIBLE : View.GONE);
+            holder.itemView.setBackgroundResource(getBackground(items, i));
+            holder.divider.setVisibility(isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
@@ -235,8 +231,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
                                 .remove(sender.packageName + "/" + sender.sender)
                                 .apply();
                         items.remove(position);
-                        //notifyItemRemoved(position);
-                        notifyDataSetChanged();
+                        // notifyDataSetChanged();
+                        if (position > 0)
+                            notifyItemChanged(position - 1);
+                        notifyItemRemoved(position);
+                        notifyItemRangeChanged(position, getItemCount() - position);
                     })
                     .setNegativeButton(android.R.string.cancel, null)
                     .create()
@@ -266,16 +265,11 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         private final String packageName;
         private final String sender;
         private final String uuid;
-        private int background;
 
         public ImportantSender(String packageName, String sender, String uuid) {
             this.packageName = packageName;
             this.sender = sender;
             this.uuid = uuid;
-        }
-
-        public void setBackground(int background) {
-            this.background = background;
         }
     }
 
@@ -300,15 +294,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public static class SilencedApp {
         private final String packageName;
         private final int silencedWhen;
-        private int background;
 
         public SilencedApp(String packageName, int silencedWhen) {
             this.packageName = packageName;
             this.silencedWhen = silencedWhen;
-        }
-
-        public void setBackground(int background) {
-            this.background = background;
         }
     }
 }

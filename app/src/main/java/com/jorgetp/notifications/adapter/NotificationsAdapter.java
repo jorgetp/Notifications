@@ -43,7 +43,7 @@ import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Context context;
-    private final ArrayList<JSONObject> items = new ArrayList<>();
+    private final ArrayList<Object> items = new ArrayList<>();
 
     public NotificationsAdapter(Context context) {
         this.context = context;
@@ -127,36 +127,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     Date previousDate = toDate(newNotifications.get(i - 1).optLong("postTime"));
                     addHeader = !isSameDay(previousDate, currentDate);
                 }
-                if (addHeader) {
-                    try {
-                        JSONObject header = new JSONObject();
-                        header.put("header", dateToHeader(currentDate));
-                        items.add(header);
-                    } catch (JSONException e) {
-                        Log.e("NotificationsAdapter", "Error creating header", e);
-                    }
-                }
+                if (addHeader)
+                    items.add(dateToHeader(currentDate));
                 items.add(newNotifications.get(i));
             }
-        }
-
-        try {
-            for (int i = 0; i < items.size(); i++) {
-                if (items.get(i).optString("header", "").isEmpty()) {
-                    boolean isAfterHeader = i == 1 || !items.get(i - 1).optString("header", "").isEmpty();
-                    boolean isBeforeHeader = i == items.size() - 1 || !items.get(i + 1).optString("header", "").isEmpty();
-                    if (isBeforeHeader && isAfterHeader)
-                        items.get(i).put("background", R.drawable.rounded_all);
-                    else if (isBeforeHeader)
-                        items.get(i).put("background", R.drawable.rounded_bottom);
-                    else if (isAfterHeader)
-                        items.get(i).put("background", R.drawable.rounded_top);
-                    else
-                        items.get(i).put("background", R.drawable.rounded_none);
-                }
-            }
-        } catch (JSONException e) {
-            Log.e("NotificationsAdapter", "Error setting item backgrounds", e);
         }
         notifyDataSetChanged();
     }
@@ -173,7 +147,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public int getItemViewType(int position) {
-        return items.get(position).optString("header", "").isEmpty() ? 1 : 0;
+        return items.get(position) instanceof String ? 0 : 1;
     }
 
     @NonNull
@@ -208,18 +182,14 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holderGeneric, int i) {
         if (holderGeneric instanceof HeaderViewHolder) {
             HeaderViewHolder holder = (HeaderViewHolder) holderGeneric;
-            JSONObject header = items.get(i);
-            holder.tvHeader.setText(header.optString("header"));
+            holder.tvHeader.setText((String) items.get(i));
 
         } else {
-            JSONObject notification = items.get(i);
+            JSONObject notification = (JSONObject) items.get(i);
             ItemViewHolder holder = (ItemViewHolder) holderGeneric;
 
-            int itemBackground = notification.optInt("background", R.drawable.rounded_none);
-            holder.itemView.setBackgroundResource(itemBackground);
-            holder.divider.setVisibility(
-                    (itemBackground == R.drawable.rounded_top || itemBackground == R.drawable.rounded_none)
-                            ? View.VISIBLE : View.GONE);
+            holder.itemView.setBackgroundResource(SettingsAdapter.getBackground(items, i));
+            holder.divider.setVisibility(SettingsAdapter.isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
