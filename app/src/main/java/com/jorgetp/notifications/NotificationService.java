@@ -121,6 +121,14 @@ public class NotificationService extends NotificationListenerService {
             // save notification
             notificationsPrefs.edit().putString(notificationKey, json.toString()).apply();
 
+            /*SharedPreferences p = getApplicationContext().getSharedPreferences("all", Context.MODE_PRIVATE);
+            int s = p.getInt("count", 0);
+            p.edit().putInt("count", s + 1).putString("notification_" + s, json.toString()).apply();
+
+            p = getApplicationContext().getSharedPreferences(sbn.getPackageName(), Context.MODE_PRIVATE);
+            s = p.getInt("count", 0);
+            p.edit().putInt("count", s + 1).putString("notification_" + s, json.toString()).apply();*/
+
             // save icon to storage
             Bitmap[] largeIconBitmap = {null};
             if (largeIconDrawable[0] != null && largeIconDrawable[0] instanceof BitmapDrawable) {

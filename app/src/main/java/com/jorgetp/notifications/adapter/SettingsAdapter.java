@@ -139,7 +139,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
             SilencedApp app = (SilencedApp) items.get(i);
             holder.itemView.setBackgroundResource(getBackground(items, i));
-            holder.divider.setVisibility(isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
+            holder.divider.setVisibility(isDividerVisible(items, i)
+                    ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
@@ -198,7 +199,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
             ImportantSender sender = (ImportantSender) items.get(i);
             holder.itemView.setBackgroundResource(getBackground(items, i));
-            holder.divider.setVisibility(isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
+            holder.divider.setVisibility(isDividerVisible(items, i)
+                    ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
