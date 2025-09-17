@@ -130,7 +130,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     public int getItemCount() {
         int c = allPrefs.getInt(selectedPackage + "_count", 0);
         return c == 0 ? 0 : c + 1; // this plus 1 is for the first header
-        //return c;
     }
 
     @Override
@@ -144,7 +143,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
         try {
             JSONObject j;
-            if (position == 0) {
+            if (position == 0) { // first header
                 j = new JSONObject();
                 j.put("isHeader", true);
                 j.put("postTime", getItem(1).optLong("postTime"));
@@ -252,7 +251,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
             holder.tvText.setText(text);
-            holder.tvText.setMaxLines(notification.optBoolean("isExpanded", false) ? Integer.MAX_VALUE : 3);
+            holder.tvText.setMaxLines(notification.optBoolean("isExpanded", false) ?
+                    Integer.MAX_VALUE : 3);
 
             // app icon
             if (appInfo.second != null)
