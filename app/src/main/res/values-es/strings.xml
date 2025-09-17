@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Notificaciones</string>
     <string name="enable_as_nsl">Habilita como servicio de notificaciones</string>
-    <string name="menu_delete_all_except_today">Borrar todo excepto hoy</string>
-    <string name="menu_delete_all_except_today_confirmation">¿Estás seguro de que deseas borrar todas las notificaciones excepto las de hoy?</string>
+    <string name="menu_delete_all">Borrar todo</string>
+    <string name="menu_delete_all_confirmation">¿Estás seguro de que deseas borrar todas las notificaciones?</string>
     <string name="copy_title">Copiar remitente</string>
     <string name="copy_text">Copiar mensaje</string>
     <string name="notifications_deleted">Notificaciones eliminadas</string>

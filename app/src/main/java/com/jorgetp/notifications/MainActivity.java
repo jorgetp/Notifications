@@ -1,8 +1,5 @@
 package com.jorgetp.notifications;
 
-import static com.jorgetp.notifications.adapter.NotificationsAdapter.isToday;
-import static com.jorgetp.notifications.adapter.NotificationsAdapter.toDate;
-
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -11,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -39,26 +37,19 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.jorgetp.notifications.adapter.NotificationsAdapter;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.File;
 import java.io.Serializable;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
-    public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
+    public static final String NOTIFICATIONS_PREFS = "Notifications";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
     public static final int ALWAYS = 1001;
@@ -71,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
     private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
 
     private NotificationsAdapter notificationsAdapter;
-    private AllNotifications allNotifications;
     private String selectedPackage = "all";
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(
@@ -161,7 +151,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (notificationsPrefs.getAll().size() != lastNotificationCount) {
+        if (notificationsPrefs.getInt("all_count", 0) != lastNotificationCount) {
             // refresh if new notifications were posted when app was paused
             refreshDataAndUI();
         } else if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
@@ -170,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
             refreshDataAndUI();
         }
 
-        // register listener to refresh when app is active and new notifications are posted
+        // listener to refresh when app is active and new notifications are posted
         notificationsPrefs.registerOnSharedPreferenceChangeListener(notificationsListener);
     }
 
@@ -206,23 +196,35 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
                 // add a popup menu with the app names as filters
-                // first make a copy of all packages to avoid concurrent modification
-                ArrayList<Map.Entry<String, String>> packages = new ArrayList<>(allNotifications.packages);
-                for (int i = 0; i < allNotifications.packages.size(); i++)
-                    packages.set(i, new AbstractMap.SimpleEntry<>(
-                            allNotifications.packages.get(i).getKey(),
-                            allNotifications.packages.get(i).getValue()));
+                ArrayList<Pair<String, String>> packages = new ArrayList<>(10);
+                packages.add(new Pair<>("all", getString(R.string.all)));
+
+                // loop through all packages in the device and pick those whose count is at least 1
+                PackageManager pm = getPackageManager();
+                List<PackageInfo> packs = pm.getInstalledPackages(0);
+                for (PackageInfo packageInfo : packs) {
+                    String packageName = packageInfo.packageName;
+                    if (notificationsPrefs.getInt(packageName + "_count", 0) > 0) {
+                        String appName = packageName;
+                        try {
+                            appName = pm.getApplicationLabel(packageInfo.applicationInfo).toString();
+                        } catch (Exception ignored) {
+                        }
+                        packages.add(new Pair<>(packageName, appName));
+                    }
+                }
+                packages.sort(Comparator.comparing(o -> o.second.toLowerCase()));
 
                 runOnUiThread(() -> {
                     PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
                     for (int i = 0; i < packages.size(); i++)
-                        popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, packages.get(i).getValue());
+                        popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, packages.get(i).second);
 
                     popup.setOnMenuItemClickListener(menuItem -> {
                         int position = menuItem.getItemId() - 54321;
-                        selectedPackage = packages.get(position).getKey();
-                        item.setTitle(packages.get(position).getValue());
-                        refreshNotificationsView();
+                        selectedPackage = packages.get(position).first;
+                        // item.setTitle(packages.get(position).getValue());
+                        refreshDataAndUI();
                         return true;
                     });
                     popup.show();
@@ -232,60 +234,29 @@ public class MainActivity extends AppCompatActivity {
 
         } else if (itemId == R.id.menu_clear_all_except_today) {
             new AlertDialog.Builder(this)
-                    .setMessage(R.string.menu_delete_all_except_today_confirmation)
+                    .setMessage(R.string.menu_delete_all_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         Executors.newSingleThreadExecutor().execute(() -> {
-                            ArrayList<String> keysToDelete = new ArrayList<>(10);
-                            for (Map.Entry<String, ?> entry : notificationsPrefs.getAll().entrySet()) {
-                                try {
-                                    JSONObject notification = new JSONObject(entry.getValue().toString());
-                                    long postTime = notification.optLong("postTime");
-                                    Date date = toDate(postTime);
-                                    if (!isToday(date))
-                                        keysToDelete.add(entry.getKey());
+                            notificationsPrefs.edit().clear().apply();
+                            // no need to refresh notifications view because it is already
+                            // refreshed by the notificationsListener
+                            // refreshDataAndUI();
 
-                                } catch (JSONException e) {
-                                    Log.e("MainActivity", "JSON error", e);
-                                }
-                            }
+                            // delete icons whose UUID is not linked to an important sender
+                            HashSet<String> activeUUIDs = new HashSet<>(10);
+                            for (Object uuid : importantSendersPrefs.getAll().values())
+                                activeUUIDs.add(uuid.toString());
 
-                            if (!keysToDelete.isEmpty()) {
-                                SharedPreferences.Editor editor = notificationsPrefs.edit();
-                                for (String key : keysToDelete)
-                                    editor.remove(key);
-                                editor.apply();
+                            // delete files
+                            for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
+                                String fileName = file.getName();
+                                if (!fileName.startsWith("notification_icon_"))
+                                    continue;
 
-                                // no need to refresh notifications view because it is already
-                                // refreshed by the notificationsListener
-                                // refreshDataAndUI();
-
-                                // delete now all icons whose UUID is not linked to
-                                // (a) an important sender and (b) a still-stored notification
-                                // get active UUIDs
-                                HashSet<String> activeUUIDs = new HashSet<>(10);
-                                for (Object n : notificationsPrefs.getAll().values()) {
-                                    try {
-                                        JSONObject notification = new JSONObject(n.toString());
-                                        activeUUIDs.add(notification.optString("uuid"));
-                                    } catch (JSONException e) {
-                                        Log.e("MainActivity", "JSON error", e);
-                                    }
-                                }
-
-                                for (Object uuid : importantSendersPrefs.getAll().values())
-                                    activeUUIDs.add(uuid.toString());
-
-                                // delete files
-                                for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
-                                    String fileName = file.getName();
-                                    if (!fileName.startsWith("notification_icon_"))
-                                        continue;
-
-                                    String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
-                                    if (!activeUUIDs.contains(uuid)) {
-                                        if (file.delete())
-                                            Log.d("MainActivity", "Icon deleted: " + fileName);
-                                    }
+                                String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
+                                if (!activeUUIDs.contains(uuid)) {
+                                    if (file.delete())
+                                        Log.d("MainActivity", "Icon deleted: " + fileName);
                                 }
                             }
                         });
@@ -305,83 +276,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void refreshDataAndUI() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            loadAllNotifications();
-            refreshNotificationsView();
-        });
-    }
-
-    private void refreshNotificationsView() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            ArrayList<JSONObject> selectedNotifications;
-            if ("all".equals(selectedPackage))
-                selectedNotifications = allNotifications.notifications;
-            else {
-                selectedNotifications = new ArrayList<>(10);
-                for (JSONObject notification : allNotifications.notifications) {
-                    try {
-                        if (notification.getString("package").equals(selectedPackage))
-                            selectedNotifications.add(notification);
-
-                    } catch (JSONException e) {
-                        Log.e("NotificationsAdapter", "JSON error", e);
-                    }
-                }
-            }
-            ArrayList<JSONObject> selectedNotificationsFinal = selectedNotifications;
-            runOnUiThread(() -> notificationsAdapter.updateData(selectedNotificationsFinal));
-        });
-    }
-
-    private void loadAllNotifications() {
-        ArrayList<JSONObject> notifications = new ArrayList<>(10);
-        HashMap<String, String> packagesMap = new HashMap<>();
-
-        for (Object n : notificationsPrefs.getAll().values()) {
-            try {
-                JSONObject notification = new JSONObject(n.toString());
-                notifications.add(notification);
-
-                String packageName = notification.optString("package");
-                Pair<CharSequence, Drawable> appInfo = getAppInfo(this, packageName);
-                packagesMap.put(packageName, appInfo.first.toString());
-
-                Log.d("NotificationsAdapter", "Notification loaded: " + notification);
-
-            } catch (JSONException e) {
-                Log.e("NotificationsAdapter", "JSON error", e);
-            }
-        }
-
-        // sort notifications by timestamp in descending order
-        notifications.sort((o1, o2) -> {
-            try {
-                return Math.toIntExact(o2.getLong("postTime") - o1.getLong("postTime"));
-            } catch (JSONException e) {
-                Log.e("NotificationsAdapter", "JSON error", e);
-                return 0;
-            }
-        });
-
-        // Create sorted list of packages
-        List<Map.Entry<String, String>> packages = new ArrayList<>(packagesMap.entrySet());
-        packages.sort(Comparator.comparing(o -> o.getValue().toLowerCase()));
-        // Add "all" filter at the beginning
-        packages.add(0, new AbstractMap.SimpleEntry<>("all", getString(R.string.all)));
-
-        allNotifications = new AllNotifications(notifications, packages);
-        lastNotificationCount = notifications.size();
-        Log.d("NotificationsAdapter", "All notifications loaded");
-    }
-
-    private static class AllNotifications {
-        private final ArrayList<JSONObject> notifications;
-        private final List<Map.Entry<String, String>> packages;
-
-        public AllNotifications(ArrayList<JSONObject> notifications,
-                                List<Map.Entry<String, String>> packages) {
-            this.notifications = notifications;
-            this.packages = packages;
-        }
+        notificationsAdapter.updateData(selectedPackage);
+        lastNotificationCount = notificationsPrefs.getInt("all_count", 0);
     }
 }

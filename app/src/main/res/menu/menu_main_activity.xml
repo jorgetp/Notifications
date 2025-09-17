@@ -12,7 +12,7 @@
         <item
             android:id="@+id/menu_clear_all_except_today"
             android:icon="@drawable/outline_delete_24"
-            android:title="@string/menu_delete_all_except_today" />
+            android:title="@string/menu_delete_all" />
     </group>
     <group android:id="@+id/group_settings">
         <item
