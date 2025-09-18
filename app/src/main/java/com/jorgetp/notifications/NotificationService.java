@@ -24,15 +24,12 @@ import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import android.util.Pair;
 
-import com.jorgetp.notifications.adapter.NotificationsAdapter;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -49,59 +46,6 @@ public class NotificationService extends NotificationListenerService {
         String text = textRaw.substring(0, Math.min(300, textRaw.length()));
 
         return postTimeBlock + "|" + packageName + "|" + title + "|" + text;
-    }
-
-    public void saveNotification(JSONObject notification) {
-        SharedPreferences prefs = MainActivity.getPrefs(this, NOTIFICATIONS_PREFS);
-
-        try {
-            SharedPreferences.Editor editor = prefs.edit();
-
-            int allCount = prefs.getInt("all_count", 0);
-            if (allCount > 0) {
-                long lastFromAll = new JSONObject(prefs
-                        .getString("all_notification_" + (allCount - 1), "{}"))
-                        .optLong("postTime");
-
-                Date now = new Date(notification.optLong("postTime"));
-                Date last = new Date(lastFromAll);
-                if (!NotificationsAdapter.isSameDay(now, last)) {
-                    JSONObject j = new JSONObject();
-                    j.put("isHeader", true);
-                    j.put("postTime", lastFromAll);
-                    editor.putString("all_notification_" + allCount, j.toString());
-                    allCount += 1;
-                }
-            }
-
-            String packageName = notification.optString("package");
-            int packageCount = prefs.getInt(packageName + "_count", 0);
-            if (packageCount > 0) {
-                long lastFromPackage = new JSONObject(prefs
-                        .getString(packageName + "_notification_" + (packageCount - 1), "{}"))
-                        .optLong("postTime");
-
-                Date now = new Date(notification.optLong("postTime"));
-                Date last = new Date(lastFromPackage);
-                if (!NotificationsAdapter.isSameDay(now, last)) {
-                    JSONObject j = new JSONObject();
-                    j.put("isHeader", true);
-                    j.put("postTime", lastFromPackage);
-                    editor.putString(packageName + "_notification_" + packageCount, j.toString());
-                    packageCount += 1;
-                }
-            }
-
-            editor
-                    .putString("all_notification_" + allCount, notification.toString())
-                    .putInt("all_count", allCount + 1)
-                    .putString(packageName + "_notification_" + packageCount, notification.toString())
-                    .putInt(packageName + "_count", packageCount + 1)
-                    .apply();
-
-        } catch (Exception e) {
-            // Log.e("NotificationService", "Error saving notification", e);
-        }
     }
 
     @Override
@@ -172,11 +116,10 @@ public class NotificationService extends NotificationListenerService {
             String notificationKey = createKey(json);
             SharedPreferences notificationsPrefs = MainActivity.getPrefs(this, NOTIFICATIONS_PREFS);
             SharedPreferences importantSenders = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
-            boolean postNotification = isSilenced && !notificationsPrefs.getBoolean(notificationKey, false);
+            boolean postNotification = isSilenced && !notificationsPrefs.contains(notificationKey);
 
             // save notification
-            saveNotification(json);
-            notificationsPrefs.edit().putBoolean(notificationKey, true).apply();
+            notificationsPrefs.edit().putString(notificationKey, json.toString()).apply();
 
             // save icon to storage
             Bitmap[] largeIconBitmap = {null};

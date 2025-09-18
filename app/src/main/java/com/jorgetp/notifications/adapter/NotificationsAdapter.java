@@ -36,20 +36,38 @@ import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final Context context;
-    private final SharedPreferences allPrefs;
-    private final HashMap<Integer, JSONObject> items = new HashMap<>(100);
-    private String selectedPackage = "all";
+    private final ArrayList<Object> items = new ArrayList<>();
 
     public NotificationsAdapter(Context context) {
         this.context = context;
-        allPrefs = MainActivity.getPrefs(context, MainActivity.NOTIFICATIONS_PREFS);
+    }
+
+    public static int getBackground(ArrayList<Object> items, int position) {
+        boolean afterHeader = isAfterHeader(items, position);
+        boolean beforeHeader = isBeforeHeader(items, position);
+        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
+        if (afterHeader) return R.drawable.rounded_top;
+        if (beforeHeader) return R.drawable.rounded_bottom;
+        return R.drawable.rounded_none;
+    }
+
+    public static boolean isAfterHeader(ArrayList<Object> items, int position) {
+        return position == 0 || items.get(position - 1) instanceof String;
+    }
+
+    public static boolean isBeforeHeader(ArrayList<Object> items, int position) {
+        return position == items.size() - 1 || items.get(position + 1) instanceof String;
+    }
+
+    public static boolean isDividerVisible(ArrayList<Object> items, int position) {
+        return !isBeforeHeader(items, position);
     }
 
     public static boolean isSameDay(Date date1, Date date2) {
@@ -120,16 +138,27 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return null;
     }
 
-    public void updateData(String selectedPackage) {
-        this.selectedPackage = selectedPackage;
+    public void updateData(ArrayList<JSONObject> newNotifications) {
         items.clear();
+        if (!newNotifications.isEmpty()) {
+            for (int i = 0; i < newNotifications.size(); i++) {
+                boolean addHeader = true;
+                Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
+                if (i > 0) {
+                    Date previousDate = toDate(newNotifications.get(i - 1).optLong("postTime"));
+                    addHeader = !isSameDay(previousDate, currentDate);
+                }
+                if (addHeader)
+                    items.add(dateToHeader(currentDate));
+                items.add(newNotifications.get(i));
+            }
+        }
         notifyDataSetChanged();
     }
 
     @Override
     public int getItemCount() {
-        int c = allPrefs.getInt(selectedPackage + "_count", 0);
-        return c == 0 ? 0 : c + 1; // this plus 1 is for the first header
+        return items.size();
     }
 
     @Override
@@ -137,34 +166,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return position;
     }
 
-    public JSONObject getItem(int position) {
-        if (items.containsKey(position) && items.get(position) != null)
-            return items.get(position);
-
-        try {
-            JSONObject j;
-            if (position == 0) { // first header
-                j = new JSONObject();
-                j.put("isHeader", true);
-                j.put("postTime", getItem(1).optLong("postTime"));
-            } else {
-                String s = allPrefs.getString(
-                        selectedPackage + "_notification_" + (getItemCount() - position - 1), "");
-                j = new JSONObject(s);
-            }
-            items.put(position, j);
-            return j;
-
-        } catch (JSONException e) {
-            // Log.e("AdapterNew", "JSON error", e);
-        }
-        return null;
-    }
-
     @Override
     public int getItemViewType(int position) {
-        JSONObject j = getItem(position);
-        return (j == null || j.optBoolean("isHeader")) ? 0 : 1;
+        return items.get(position) instanceof String ? 0 : 1;
     }
 
     @NonNull
@@ -173,11 +177,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         if (viewType == 0) { // header
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.header, parent, false);
-            return new NotificationsAdapter.HeaderViewHolder(view);
+            return new HeaderViewHolder(view);
         } else { // item
             View view = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.item, parent, false);
-            return new NotificationsAdapter.ItemViewHolder(view);
+            return new ItemViewHolder(view);
         }
     }
 
@@ -195,40 +199,18 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return "";
     }
 
-    public boolean isAfterHeader(int position) {
-        return position == 0 || getItemViewType(position - 1) == 0;
-    }
-
-    public boolean isBeforeHeader(int position) {
-        return position == getItemCount() - 1 || getItemViewType(position + 1) == 0;
-    }
-
-    public int getBackground(int position) {
-        boolean afterHeader = isAfterHeader(position);
-        boolean beforeHeader = isBeforeHeader(position);
-        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
-        if (afterHeader) return R.drawable.rounded_top;
-        if (beforeHeader) return R.drawable.rounded_bottom;
-        return R.drawable.rounded_none;
-    }
-
-    public boolean isDividerVisible(int position) {
-        return !isBeforeHeader(position);
-    }
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holderGeneric, int i) {
-        if (holderGeneric instanceof NotificationsAdapter.HeaderViewHolder) {
-            NotificationsAdapter.HeaderViewHolder holder = (NotificationsAdapter.HeaderViewHolder) holderGeneric;
-            JSONObject item = getItem(i);
-            holder.tvHeader.setText(dateToHeader(toDate(item.optLong("postTime", 0))));
+        if (holderGeneric instanceof HeaderViewHolder) {
+            HeaderViewHolder holder = (HeaderViewHolder) holderGeneric;
+            holder.tvHeader.setText((String) items.get(i));
 
         } else {
-            JSONObject notification = getItem(i);
-            NotificationsAdapter.ItemViewHolder holder = (NotificationsAdapter.ItemViewHolder) holderGeneric;
+            JSONObject notification = (JSONObject) items.get(i);
+            ItemViewHolder holder = (ItemViewHolder) holderGeneric;
 
-            holder.itemView.setBackgroundResource(getBackground(i));
-            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
+            holder.itemView.setBackgroundResource(getBackground(items, i));
+            holder.divider.setVisibility(isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
@@ -251,8 +233,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
             holder.tvText.setText(text);
-            holder.tvText.setMaxLines(notification.optBoolean("isExpanded", false) ?
-                    Integer.MAX_VALUE : 3);
+            holder.tvText.setMaxLines(notification.optBoolean("isExpanded", false) ? Integer.MAX_VALUE : 3);
 
             // app icon
             if (appInfo.second != null)
@@ -367,5 +348,4 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             tvHeader = itemView.findViewById(R.id.tvHeader);
         }
     }
-
 }

@@ -69,27 +69,6 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         items.addAll(senders);
     }
 
-    public static int getBackground(ArrayList<Object> items, int position) {
-        boolean afterHeader = isAfterHeader(items, position);
-        boolean beforeHeader = isBeforeHeader(items, position);
-        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
-        if (afterHeader) return R.drawable.rounded_top;
-        if (beforeHeader) return R.drawable.rounded_bottom;
-        return R.drawable.rounded_none;
-    }
-
-    public static boolean isAfterHeader(ArrayList<Object> items, int position) {
-        return position == 0 || (position > 0 && items.get(position - 1) instanceof String);
-    }
-
-    public static boolean isBeforeHeader(ArrayList<Object> items, int position) {
-        return position == items.size() - 1 || (position + 1 < items.size() && items.get(position + 1) instanceof String);
-    }
-
-    public static boolean isDividerVisible(ArrayList<Object> items, int position) {
-        return !isBeforeHeader(items, position);
-    }
-
     public TreeSet<String> getEditedItems() {
         return editedItems;
     }
@@ -138,8 +117,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             SilencedAppViewHolder holder = (SilencedAppViewHolder) holderGeneric;
 
             SilencedApp app = (SilencedApp) items.get(i);
-            holder.itemView.setBackgroundResource(getBackground(items, i));
-            holder.divider.setVisibility(isDividerVisible(items, i)
+            holder.itemView.setBackgroundResource(NotificationsAdapter.getBackground(items, i));
+            holder.divider.setVisibility(NotificationsAdapter.isDividerVisible(items, i)
                     ? View.VISIBLE : View.GONE);
 
             // load app name and icon
@@ -198,8 +177,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
             ImportantSenderViewHolder holder = (ImportantSenderViewHolder) holderGeneric;
 
             ImportantSender sender = (ImportantSender) items.get(i);
-            holder.itemView.setBackgroundResource(getBackground(items, i));
-            holder.divider.setVisibility(isDividerVisible(items, i)
+            holder.itemView.setBackgroundResource(NotificationsAdapter.getBackground(items, i));
+            holder.divider.setVisibility(NotificationsAdapter.isDividerVisible(items, i)
                     ? View.VISIBLE : View.GONE);
 
             // load app name and icon
