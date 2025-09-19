@@ -24,9 +24,6 @@ public interface NotificationDao {
     @Query("SELECT * FROM notifications ORDER BY postTime DESC LIMIT 1")
     LiveData<StoredNotification> observeLast();
 
-    @Query("SELECT * FROM notifications ORDER BY postTime DESC LIMIT 1")
-    StoredNotification getLast();
-
     @Query("SELECT DISTINCT packageName FROM notifications")
     List<String> getPackages();
 }

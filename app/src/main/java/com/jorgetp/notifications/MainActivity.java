@@ -172,8 +172,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
-        LinearLayoutManager lm = new LinearLayoutManager(this);
-        rvNotifications.setLayoutManager(lm);
+        rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
 
         dao = DbProvider.get(getApplicationContext()).notificationDao();
@@ -187,13 +186,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-
-        Executors.newSingleThreadExecutor().execute(() -> {
-            if (dao.getLast() != null && dao.getLast().postTime > lastPauseTimestamp) {
-                // refresh if new notifications were posted when app was paused
-                getNotificationsAndRefreshUI();
-            }
-        });
 
         if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
             // refresh if 10 mins have elapsed from last pause
