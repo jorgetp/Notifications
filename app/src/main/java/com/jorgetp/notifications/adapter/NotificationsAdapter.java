@@ -42,32 +42,11 @@ import java.util.Date;
 import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private final Context context;
-    private final ArrayList<Object> items = new ArrayList<>();
+    protected final Context context;
+    protected final ArrayList<Object> items = new ArrayList<>();
 
     public NotificationsAdapter(Context context) {
         this.context = context;
-    }
-
-    public static int getBackground(ArrayList<Object> items, int position) {
-        boolean afterHeader = isAfterHeader(items, position);
-        boolean beforeHeader = isBeforeHeader(items, position);
-        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
-        if (afterHeader) return R.drawable.rounded_top;
-        if (beforeHeader) return R.drawable.rounded_bottom;
-        return R.drawable.rounded_none;
-    }
-
-    public static boolean isAfterHeader(ArrayList<Object> items, int position) {
-        return position == 0 || items.get(position - 1) instanceof String;
-    }
-
-    public static boolean isBeforeHeader(ArrayList<Object> items, int position) {
-        return position == items.size() - 1 || items.get(position + 1) instanceof String;
-    }
-
-    public static boolean isDividerVisible(ArrayList<Object> items, int position) {
-        return !isBeforeHeader(items, position);
     }
 
     public static boolean isSameDay(Date date1, Date date2) {
@@ -138,22 +117,25 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return null;
     }
 
-    public void updateData(ArrayList<JSONObject> newNotifications) {
-        items.clear();
-        if (!newNotifications.isEmpty()) {
-            for (int i = 0; i < newNotifications.size(); i++) {
-                boolean addHeader = true;
-                Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
-                if (i > 0) {
-                    Date previousDate = toDate(newNotifications.get(i - 1).optLong("postTime"));
-                    addHeader = !isSameDay(previousDate, currentDate);
-                }
-                if (addHeader)
-                    items.add(dateToHeader(currentDate));
-                items.add(newNotifications.get(i));
-            }
-        }
-        notifyDataSetChanged();
+    public int getBackground(int position) {
+        boolean afterHeader = isAfterHeader(position);
+        boolean beforeHeader = isBeforeHeader(position);
+        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
+        if (afterHeader) return R.drawable.rounded_top;
+        if (beforeHeader) return R.drawable.rounded_bottom;
+        return R.drawable.rounded_none;
+    }
+
+    public boolean isAfterHeader(int position) {
+        return position == 0 || getItem(position - 1) instanceof String;
+    }
+
+    public boolean isBeforeHeader(int position) {
+        return position == getItemCount() - 1 || getItem(position + 1) instanceof String;
+    }
+
+    public boolean isDividerVisible(int position) {
+        return !isBeforeHeader(position);
     }
 
     @Override
@@ -166,9 +148,43 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return position;
     }
 
+    public Object getItem(int position) {
+        return items.get(getItemCount() - position - 1);
+        //return items.get(position);
+    }
+
+    public void updateData(ArrayList<JSONObject> newNotifications) {
+        items.clear();
+        if (!newNotifications.isEmpty()) {
+            /*for (int i = 0; i < newNotifications.size(); i++) {
+                boolean addHeader = true;
+                Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
+                if (i > 0) {
+                    Date previousDate = toDate(newNotifications.get(i - 1).optLong("postTime"));
+                    addHeader = !isSameDay(previousDate, currentDate);
+                }
+                if (addHeader)
+                    items.add(dateToHeader(currentDate));
+                items.add(newNotifications.get(i));
+            }*/
+            for (int i = newNotifications.size() - 1; i >= 0; i--) {
+                Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
+                if (i < newNotifications.size() - 1) {
+                    Date previousDate = toDate(newNotifications.get(i + 1).optLong("postTime"));
+                    if (!isSameDay(previousDate, currentDate))
+                        items.add(dateToHeader(previousDate));
+                }
+                items.add(newNotifications.get(i));
+                if (i == 0)
+                    items.add(dateToHeader(currentDate));
+            }
+        }
+        notifyDataSetChanged();
+    }
+
     @Override
     public int getItemViewType(int position) {
-        return items.get(position) instanceof String ? 0 : 1;
+        return getItem(position) instanceof String ? 0 : 1;
     }
 
     @NonNull
@@ -203,14 +219,14 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holderGeneric, int i) {
         if (holderGeneric instanceof HeaderViewHolder) {
             HeaderViewHolder holder = (HeaderViewHolder) holderGeneric;
-            holder.tvHeader.setText((String) items.get(i));
+            holder.tvHeader.setText((String) getItem(i));
 
         } else {
-            JSONObject notification = (JSONObject) items.get(i);
+            JSONObject notification = (JSONObject) getItem(i);
             ItemViewHolder holder = (ItemViewHolder) holderGeneric;
 
-            holder.itemView.setBackgroundResource(getBackground(items, i));
-            holder.divider.setVisibility(isDividerVisible(items, i) ? View.VISIBLE : View.GONE);
+            holder.itemView.setBackgroundResource(getBackground(i));
+            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);

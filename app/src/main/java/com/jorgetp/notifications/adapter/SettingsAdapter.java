@@ -31,13 +31,11 @@ import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeSet;
 
-public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private final Context context;
+public class SettingsAdapter extends NotificationsAdapter {
     private final TreeSet<String> editedItems = new TreeSet<>();
-    private final ArrayList<Object> items = new ArrayList<>();
 
     public SettingsAdapter(Context context) {
-        this.context = context;
+        super(context);
         items.clear();
 
         // silenced apps
@@ -73,15 +71,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         return editedItems;
     }
 
-    @Override
-    public int getItemCount() {
-        return items.size();
+    public Object getItem(int position) {
+        return items.get(position);
     }
 
-    @Override
-    public long getItemId(int position) {
-        return position;
-    }
 
     @NonNull
     @Override
@@ -100,7 +93,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
 
     @Override
     public int getItemViewType(int position) {
-        Object o = items.get(position);
+        Object o = getItem(position);
         if (o instanceof String) return 0;
         if (o instanceof SilencedApp) return 1;
         return 2;
@@ -110,16 +103,15 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holderGeneric, int i) {
         if (holderGeneric instanceof NotificationsAdapter.HeaderViewHolder) {
             NotificationsAdapter.HeaderViewHolder holder = (NotificationsAdapter.HeaderViewHolder) holderGeneric;
-            String header = (String) items.get(i);
+            String header = (String) getItem(i);
             holder.tvHeader.setText(header);
 
         } else if (holderGeneric instanceof SilencedAppViewHolder) {
             SilencedAppViewHolder holder = (SilencedAppViewHolder) holderGeneric;
 
-            SilencedApp app = (SilencedApp) items.get(i);
-            holder.itemView.setBackgroundResource(NotificationsAdapter.getBackground(items, i));
-            holder.divider.setVisibility(NotificationsAdapter.isDividerVisible(items, i)
-                    ? View.VISIBLE : View.GONE);
+            SilencedApp app = (SilencedApp) getItem(i);
+            holder.itemView.setBackgroundResource(getBackground(i));
+            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
@@ -176,10 +168,9 @@ public class SettingsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         } else {
             ImportantSenderViewHolder holder = (ImportantSenderViewHolder) holderGeneric;
 
-            ImportantSender sender = (ImportantSender) items.get(i);
-            holder.itemView.setBackgroundResource(NotificationsAdapter.getBackground(items, i));
-            holder.divider.setVisibility(NotificationsAdapter.isDividerVisible(items, i)
-                    ? View.VISIBLE : View.GONE);
+            ImportantSender sender = (ImportantSender) getItem(i);
+            holder.itemView.setBackgroundResource(getBackground(i));
+            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
