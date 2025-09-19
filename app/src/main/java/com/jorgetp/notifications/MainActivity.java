@@ -35,39 +35,37 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.jorgetp.notifications.adapter.NotificationsAdapter;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.NotificationDao;
+import com.jorgetp.notifications.dao.StoredNotification;
 
 import java.io.File;
 import java.io.Serializable;
-import java.util.AbstractMap;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
-    public static final String NOTIFICATIONS_PREFS = "Notifications-Items";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 
     private long lastPauseTimestamp = Long.MAX_VALUE;
-    private int lastNotificationCount = Integer.MIN_VALUE;
-
-    private SharedPreferences notificationsPrefs;
-    private SharedPreferences.OnSharedPreferenceChangeListener notificationsListener;
+    private NotificationDao dao;
 
     private NotificationsAdapter notificationsAdapter;
-    private AllNotifications allNotifications;
     private String selectedPackage = "all";
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(
@@ -94,6 +92,35 @@ public class MainActivity extends AppCompatActivity {
             Log.e("NotificationService", "App not found", e);
         }
         return Pair.create(packageName, null);
+    }
+
+    public static boolean isSameDay(Date date1, Date date2) {
+        Calendar cal1 = Calendar.getInstance();
+        cal1.setTime(date1);
+        Calendar cal2 = Calendar.getInstance();
+        cal2.setTime(date2);
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR);
+    }
+
+    public static Date toDate(long timestamp) {
+        try {
+            return new Date(timestamp);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public static boolean isToday(Date date) {
+        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate today = LocalDate.now();
+        return givenDate.equals(today);
+    }
+
+    public static boolean isYesterday(Date date) {
+        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        return givenDate.equals(yesterday);
     }
 
     private boolean isNotificationServiceEnabled() {
@@ -149,25 +176,35 @@ public class MainActivity extends AppCompatActivity {
         rvNotifications.setLayoutManager(lm);
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
 
-        notificationsPrefs = getPrefs(this, NOTIFICATIONS_PREFS);
-        notificationsListener = (sharedPreferences, key) -> refreshDataAndUI();
+        dao = DbProvider.get(getApplicationContext()).notificationDao();
+        dao.observeLast().observe(this, last -> {
+            if (last != null) {
+                refreshDataAndUI();
+            }
+        });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
 
-        if (notificationsPrefs.getAll().size() != lastNotificationCount) {
-            // refresh if new notifications were posted when app was paused
-            refreshDataAndUI();
-        } else if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            try {
+                if (dao.getLast().postTime > lastPauseTimestamp) {
+                    // refresh if new notifications were posted when app was paused
+                    refreshDataAndUI();
+                }
+            } catch (Exception e) {
+                Log.e("Here", "Error getting latest notification", e);
+            }
+
+        });
+
+        if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
             // refresh if 10 mins have elapsed from last pause
             selectedPackage = "all";
             refreshDataAndUI();
         }
-
-        // register listener to refresh when app is active and new notifications are posted
-        notificationsPrefs.registerOnSharedPreferenceChangeListener(notificationsListener);
     }
 
     @Override
@@ -175,9 +212,6 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         // save timestamp
         lastPauseTimestamp = System.currentTimeMillis();
-
-        // unregister listener
-        notificationsPrefs.unregisterOnSharedPreferenceChangeListener(notificationsListener);
     }
 
     @SuppressLint("RestrictedApi")
@@ -202,23 +236,24 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
                 // add a popup menu with the app names as filters
-                // first make a copy of all packages to avoid concurrent modification
-                ArrayList<Map.Entry<String, String>> packages = new ArrayList<>(allNotifications.packages);
-                for (int i = 0; i < allNotifications.packages.size(); i++)
-                    packages.set(i, new AbstractMap.SimpleEntry<>(
-                            allNotifications.packages.get(i).getKey(),
-                            allNotifications.packages.get(i).getValue()));
+                List<String> packages = dao.getPackages();
+                ArrayList<Pair<String, String>> apps = new ArrayList<>(packages.size());
+                for (String packageName : packages) {
+                    Pair<CharSequence, Drawable> appInfo = getAppInfo(this, packageName);
+                    apps.add(new Pair<>(packageName, appInfo.first.toString()));
+                }
+                apps.add(new Pair<>("all", getString(R.string.all)));
+                apps.sort(Comparator.comparing(o -> o.second.toLowerCase()));
 
                 runOnUiThread(() -> {
                     PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
-                    for (int i = 0; i < packages.size(); i++)
-                        popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, packages.get(i).getValue());
+                    for (int i = 0; i < apps.size(); i++)
+                        popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, apps.get(i).second);
 
                     popup.setOnMenuItemClickListener(menuItem -> {
                         int position = menuItem.getItemId() - 54321;
-                        selectedPackage = packages.get(position).getKey();
-                        // item.setTitle(packages.get(position).getValue());
-                        refreshNotificationsView();
+                        selectedPackage = apps.get(position).first;
+                        refreshDataAndUI();
                         return true;
                     });
                     popup.show();
@@ -231,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                     .setMessage(R.string.menu_delete_all)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         Executors.newSingleThreadExecutor().execute(() -> {
-                            notificationsPrefs.edit().clear().apply();
+                            dao.deleteAll();
                             // no need to refresh notifications view because it is already
                             // refreshed by the notificationsListener
                             // refreshDataAndUI();
@@ -271,82 +306,38 @@ public class MainActivity extends AppCompatActivity {
 
     public void refreshDataAndUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
-            loadAllNotifications();
-            refreshNotificationsView();
-        });
-    }
+            List<StoredNotification> notifications = "all".equals(selectedPackage)
+                    ? dao.getAll() : dao.getForPackage(selectedPackage);
 
-    private void refreshNotificationsView() {
-        Executors.newSingleThreadExecutor().execute(() -> {
-            ArrayList<JSONObject> selectedNotifications;
-            if ("all".equals(selectedPackage))
-                selectedNotifications = allNotifications.notifications;
-            else {
-                selectedNotifications = new ArrayList<>(10);
-                for (JSONObject notification : allNotifications.notifications) {
-                    try {
-                        if (notification.getString("package").equals(selectedPackage))
-                            selectedNotifications.add(notification);
-
-                    } catch (JSONException e) {
-                        Log.e("NotificationsAdapter", "JSON error", e);
-                    }
+            ArrayList<Object> items = new ArrayList<>(1000);
+            Date previousDate = null;
+            for (StoredNotification notification : notifications) {
+                boolean addHeader = true;
+                Date currentDate = toDate(notification.postTime);
+                if (previousDate != null) {
+                    addHeader = !isSameDay(previousDate, currentDate);
                 }
+                if (addHeader)
+                    items.add(dateToHeader(currentDate));
+                items.add(notification);
+                previousDate = currentDate;
             }
-            ArrayList<JSONObject> selectedNotificationsFinal = selectedNotifications;
-            runOnUiThread(() -> notificationsAdapter.updateData(selectedNotificationsFinal));
+
+            runOnUiThread(() -> notificationsAdapter.updateData(items));
         });
     }
 
-    private void loadAllNotifications() {
-        ArrayList<JSONObject> notifications = new ArrayList<>(10);
-        HashMap<String, String> packagesMap = new HashMap<>();
-
-        for (Object n : notificationsPrefs.getAll().values()) {
-            try {
-                JSONObject notification = new JSONObject(n.toString());
-                notifications.add(notification);
-
-                String packageName = notification.optString("package");
-                Pair<CharSequence, Drawable> appInfo = getAppInfo(this, packageName);
-                packagesMap.put(packageName, appInfo.first.toString());
-
-                Log.d("NotificationsAdapter", "Notification loaded: " + notification);
-
-            } catch (JSONException e) {
-                Log.e("NotificationsAdapter", "JSON error", e);
+    public String dateToHeader(Date date) {
+        if (date != null) {
+            if (isToday(date)) {
+                return getString(R.string.today);
+            } else if (isYesterday(date)) {
+                return getString(R.string.yesterday);
+            } else {
+                SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
+                return sdf.format(date);
             }
         }
-
-        // sort notifications by timestamp in descending order
-        notifications.sort((o1, o2) -> {
-            try {
-                return Math.toIntExact(o2.getLong("postTime") - o1.getLong("postTime"));
-            } catch (JSONException e) {
-                Log.e("NotificationsAdapter", "JSON error", e);
-                return 0;
-            }
-        });
-
-        // Create sorted list of packages
-        List<Map.Entry<String, String>> packages = new ArrayList<>(packagesMap.entrySet());
-        packages.sort(Comparator.comparing(o -> o.getValue().toLowerCase()));
-        // Add "all" filter at the beginning
-        packages.add(0, new AbstractMap.SimpleEntry<>("all", getString(R.string.all)));
-
-        allNotifications = new AllNotifications(notifications, packages);
-        lastNotificationCount = notifications.size();
-        Log.d("NotificationsAdapter", "All notifications loaded");
-    }
-
-    private static class AllNotifications {
-        private final ArrayList<JSONObject> notifications;
-        private final List<Map.Entry<String, String>> packages;
-
-        public AllNotifications(ArrayList<JSONObject> notifications,
-                                List<Map.Entry<String, String>> packages) {
-            this.notifications = notifications;
-            this.packages = packages;
-        }
+        return "";
     }
 }

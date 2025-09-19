@@ -28,54 +28,20 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.jorgetp.notifications.dao.StoredNotification;
 
 import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     protected final Context context;
-    protected final ArrayList<Object> items = new ArrayList<>();
+    protected ArrayList<Object> items = new ArrayList<>();
 
     public NotificationsAdapter(Context context) {
         this.context = context;
-    }
-
-    public static boolean isSameDay(Date date1, Date date2) {
-        Calendar cal1 = Calendar.getInstance();
-        cal1.setTime(date1);
-        Calendar cal2 = Calendar.getInstance();
-        cal2.setTime(date2);
-        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
-                cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR);
-    }
-
-    public static Date toDate(long timestamp) {
-        try {
-            return new Date(timestamp);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    public static boolean isToday(Date date) {
-        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate today = LocalDate.now();
-        return givenDate.equals(today);
-    }
-
-    public static boolean isYesterday(Date date) {
-        LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        return givenDate.equals(yesterday);
     }
 
     public static Bitmap createIconBitmap(String packageName, String sender) {
@@ -149,36 +115,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     public Object getItem(int position) {
-        return items.get(getItemCount() - position - 1);
-        //return items.get(position);
+        return items.get(position);
     }
 
-    public void updateData(ArrayList<JSONObject> newNotifications) {
-        items.clear();
-        if (!newNotifications.isEmpty()) {
-            /*for (int i = 0; i < newNotifications.size(); i++) {
-                boolean addHeader = true;
-                Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
-                if (i > 0) {
-                    Date previousDate = toDate(newNotifications.get(i - 1).optLong("postTime"));
-                    addHeader = !isSameDay(previousDate, currentDate);
-                }
-                if (addHeader)
-                    items.add(dateToHeader(currentDate));
-                items.add(newNotifications.get(i));
-            }*/
-            for (int i = newNotifications.size() - 1; i >= 0; i--) {
-                Date currentDate = toDate(newNotifications.get(i).optLong("postTime"));
-                if (i < newNotifications.size() - 1) {
-                    Date previousDate = toDate(newNotifications.get(i + 1).optLong("postTime"));
-                    if (!isSameDay(previousDate, currentDate))
-                        items.add(dateToHeader(previousDate));
-                }
-                items.add(newNotifications.get(i));
-                if (i == 0)
-                    items.add(dateToHeader(currentDate));
-            }
-        }
+    public void updateData(ArrayList<Object> items) {
+        this.items = items;
         notifyDataSetChanged();
     }
 
@@ -201,20 +142,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
     }
 
-    public String dateToHeader(Date date) {
-        if (date != null) {
-            if (isToday(date)) {
-                return context.getString(R.string.today);
-            } else if (isYesterday(date)) {
-                return context.getString(R.string.yesterday);
-            } else {
-                SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
-                return sdf.format(date);
-            }
-        }
-        return "";
-    }
-
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holderGeneric, int i) {
         if (holderGeneric instanceof HeaderViewHolder) {
@@ -222,7 +149,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.tvHeader.setText((String) getItem(i));
 
         } else {
-            JSONObject notification = (JSONObject) getItem(i);
+            StoredNotification notification = (StoredNotification) getItem(i);
             ItemViewHolder holder = (ItemViewHolder) holderGeneric;
 
             holder.itemView.setBackgroundResource(getBackground(i));
@@ -231,14 +158,14 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
 
-            String packageName = notification.optString("package");
-            String title = notification.optString("title");
-            String text = notification.optString("text");
+            String packageName = notification.packageName;
+            String title = notification.title;
+            String text = notification.text;
             boolean isSilencedApp = silencedAppsPrefs.contains(packageName);
             boolean isImportant = importantSendersPrefs.contains(packageName + "/" + title);
 
-            long postTime = notification.optLong("postTime");
-            Date date = toDate(postTime);
+            long postTime = notification.postTime;
+            Date date = MainActivity.toDate(postTime);
             if (date != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
                 holder.tvTime.setText(sdf.format(date));
@@ -249,7 +176,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
             holder.tvText.setText(text);
-            holder.tvText.setMaxLines(notification.optBoolean("isExpanded", false) ? Integer.MAX_VALUE : 3);
 
             // app icon
             if (appInfo.second != null)
@@ -259,7 +185,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             // sender icon
             holder.ivSenderIcon.setVisibility(View.GONE);
-            String category = notification.optString("category");
+            String category = notification.category;
             if (Notification.CATEGORY_MESSAGE.equals(category)
                 /*|| Notification.CATEGORY_EMAIL.equals(category)
                 || Notification.CATEGORY_SOCIAL.equals(category)
@@ -272,7 +198,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
 
             try (FileInputStream fis = context
-                    .openFileInput("notification_icon_" + notification.optString("uuid") + ".png")) {
+                    .openFileInput("notification_icon_" + notification.uuid + ".png")) {
                 Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
@@ -304,15 +230,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         Toast.makeText(context, R.string.copied_text, Toast.LENGTH_SHORT).show();
                         return true;
 
-                    } else if (itemId == R.id.expand) {
-                        try {
-                            notification.put("isExpanded", true);
-                        } catch (JSONException e) {
-                            Log.e("NotificationsAdapter", "Error expanding notification", e);
-                        }
-                        notifyItemChanged(position);
-                        return true;
-
                     } else if (itemId == R.id.silence_app) {
                         silencedAppsPrefs.edit().putInt(packageName, ALWAYS).apply();
                         notifyItemChanged(position);
@@ -322,7 +239,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
                     } else if (itemId == R.id.set_as_important) {
                         importantSendersPrefs.edit().putString(packageName + "/" + title,
-                                notification.optString("uuid")).apply();
+                                notification.uuid).apply();
                         notifyItemChanged(position);
                         Toast.makeText(context, context.getString(R.string.set_as_important),
                                 Toast.LENGTH_SHORT).show();

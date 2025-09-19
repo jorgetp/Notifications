@@ -4,7 +4,6 @@ import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
-import static com.jorgetp.notifications.MainActivity.NOTIFICATIONS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
@@ -24,8 +23,9 @@ import android.service.notification.StatusBarNotification;
 import android.util.Log;
 import android.util.Pair;
 
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.NotificationDao;
+import com.jorgetp.notifications.dao.StoredNotification;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -37,16 +37,6 @@ import java.util.concurrent.Executors;
 public class NotificationService extends NotificationListenerService {
     private final Random random = new Random();
     private NotificationManager manager;
-
-    private static String createKey(JSONObject json) {
-        long postTimeBlock = json.optLong("postTime") / 30000;
-        String packageName = json.optString("package", "");
-        String title = json.optString("title", "");
-        String textRaw = json.optString("text", "");
-        String text = textRaw.substring(0, Math.min(300, textRaw.length()));
-
-        return postTimeBlock + "|" + packageName + "|" + title + "|" + text;
-    }
 
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
@@ -80,21 +70,16 @@ public class NotificationService extends NotificationListenerService {
         String title = extras.getString(Notification.EXTRA_TITLE);
         CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
 
-        // build JSON
-        JSONObject json = new JSONObject();
-        String uuid = UUID.randomUUID().toString();
-        try {
-            json.put("uuid", uuid);
-            json.put("package", sbn.getPackageName());
-            json.put("postTime", sbn.getPostTime());
-            json.put("title", title);
-            json.put("text", text != null ? text.toString() : null);
-            json.put("category", notification.category);
-
-        } catch (JSONException e) {
-            Log.e("NotificationService", "JSON error", e);
-            return;
-        }
+        // Get DAO
+        NotificationDao dao = DbProvider.get(getApplicationContext()).notificationDao();
+        StoredNotification sn = new StoredNotification(
+                sbn.getPostTime(),
+                UUID.randomUUID().toString(),
+                sbn.getPackageName(),
+                title != null ? title : "",
+                text != null ? text.toString() : "",
+                notification.category
+        );
 
         // get icons
         Icon smallIcon = notification.getSmallIcon();
@@ -113,13 +98,11 @@ public class NotificationService extends NotificationListenerService {
 
         // asynchronously continue processing, i.e. save notification, icons, etc...
         Executors.newSingleThreadExecutor().execute(() -> {
-            String notificationKey = createKey(json);
-            SharedPreferences notificationsPrefs = MainActivity.getPrefs(this, NOTIFICATIONS_PREFS);
             SharedPreferences importantSenders = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
-            boolean postNotification = isSilenced && !notificationsPrefs.contains(notificationKey);
+            boolean postNotification = isSilenced /*&& !notificationsPrefs.contains(sn.key)*/;
 
             // save notification
-            notificationsPrefs.edit().putString(notificationKey, json.toString()).apply();
+            dao.insert(sn);
 
             // save icon to storage
             Bitmap[] largeIconBitmap = {null};
@@ -127,14 +110,14 @@ public class NotificationService extends NotificationListenerService {
                 largeIconBitmap[0] = ((BitmapDrawable) largeIconDrawable[0]).getBitmap();
 
                 Executors.newSingleThreadExecutor().execute(() -> {
-                    try (FileOutputStream fos = openFileOutput("notification_icon_" + uuid + ".png",
+                    try (FileOutputStream fos = openFileOutput("notification_icon_" + sn.uuid + ".png",
                             Context.MODE_PRIVATE)) {
                         largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
 
                         // update important sender icon if applicable
                         String key = sbn.getPackageName() + "/" + title;
                         if (importantSenders.contains(key))
-                            importantSenders.edit().putString(key, uuid).apply();
+                            importantSenders.edit().putString(key, sn.uuid).apply();
 
                     } catch (IOException e) {
                         Log.e("NotificationService", "Error saving notification icon", e);
@@ -144,9 +127,9 @@ public class NotificationService extends NotificationListenerService {
 
             // post silenced notification
             if (postNotification)
-                postSilencedNotification(json, smallIcon, largeIconBitmap[0]);
+                postSilencedNotification(sn, smallIcon, largeIconBitmap[0]);
 
-            Log.d("NotificationService", "Notification processed: " + json);
+            Log.d("NotificationService", "Notification processed: " + sn.key);
         });
     }
 
@@ -229,20 +212,15 @@ public class NotificationService extends NotificationListenerService {
         }
     }
 
-    private void postSilencedNotification(JSONObject notification, Icon smallIcon, Bitmap largeIcon) {
-        String packageName = notification.optString("package");
-        String title = notification.optString("title");
-        String text = notification.optString("text");
-        long postTime = notification.optLong("postTime");
-
+    private void postSilencedNotification(StoredNotification notification, Icon smallIcon, Bitmap largeIcon) {
         // create notification builder
         Notification.Builder builder = new Notification.Builder(getApplicationContext(), CHANNEL_ID)
                 .setSmallIcon(R.drawable.outline_notifications_off_24)
-                .setContentTitle(getString(R.string.silenced_notification, title))
-                .setContentText(text)
+                .setContentTitle(getString(R.string.silenced_notification, notification.title))
+                .setContentText(notification.text)
                 .setAutoCancel(true)
                 .setShowWhen(true)
-                .setWhen(postTime);
+                .setWhen(notification.postTime);
 
         /*if (smallIcon != null)
             builder.setSmallIcon(smallIcon);*/
@@ -251,7 +229,7 @@ public class NotificationService extends NotificationListenerService {
             builder.setLargeIcon(largeIcon);
         else {
             // set large icon as the original app icon
-            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(getApplicationContext(), packageName);
+            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(getApplicationContext(), notification.packageName);
             if (appInfo.second != null) {
                 Bitmap iconBitmap;
                 if (appInfo.second instanceof BitmapDrawable) {
@@ -272,7 +250,7 @@ public class NotificationService extends NotificationListenerService {
         }
 
         // set tap action to open notification's original activity
-        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(packageName);
+        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(notification.packageName);
         if (launchIntent != null) {
             builder.setContentIntent(PendingIntent.getActivity(
                     getApplicationContext(), 0, launchIntent,

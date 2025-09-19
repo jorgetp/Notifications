@@ -71,11 +71,6 @@ public class SettingsAdapter extends NotificationsAdapter {
         return editedItems;
     }
 
-    public Object getItem(int position) {
-        return items.get(position);
-    }
-
-
     @NonNull
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
