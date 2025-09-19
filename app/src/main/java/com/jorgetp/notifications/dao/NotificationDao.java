@@ -12,11 +12,11 @@ public interface NotificationDao {
     @Insert
     void insert(StoredNotification notification);
 
-    @Query("SELECT * FROM notifications WHERE packageName = :packageName ORDER BY postTime DESC")
-    List<StoredNotification> getForPackage(String packageName);
+    @Query("SELECT * FROM notifications WHERE packageName = :packageName ORDER BY postTime DESC LIMIT :limit")
+    List<StoredNotification> getForPackage(String packageName, int limit);
 
-    @Query("SELECT * FROM notifications ORDER BY postTime DESC")
-    List<StoredNotification> getAll();
+    @Query("SELECT * FROM notifications ORDER BY postTime DESC LIMIT :limit")
+    List<StoredNotification> getAll(int limit);
 
     @Query("DELETE FROM notifications")
     void deleteAll();

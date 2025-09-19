@@ -73,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
                     Serializable editedItems = result.getData().getSerializableExtra("edited_items");
                     if (editedItems instanceof TreeSet)
-                        refreshDataAndUI();
+                        getNotificationsAndRefreshUI();
                 }
             });
 
@@ -178,8 +178,8 @@ public class MainActivity extends AppCompatActivity {
 
         dao = DbProvider.get(getApplicationContext()).notificationDao();
         dao.observeLast().observe(this, last -> {
-            if (last != null) {
-                refreshDataAndUI();
+            if (last != null && (selectedPackage.equals("all") || selectedPackage.equals(last.packageName))) {
+                getNotificationsAndRefreshUI();
             }
         });
     }
@@ -189,21 +189,16 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            try {
-                if (dao.getLast().postTime > lastPauseTimestamp) {
-                    // refresh if new notifications were posted when app was paused
-                    refreshDataAndUI();
-                }
-            } catch (Exception e) {
-                Log.e("Here", "Error getting latest notification", e);
+            if (dao.getLast() != null && dao.getLast().postTime > lastPauseTimestamp) {
+                // refresh if new notifications were posted when app was paused
+                getNotificationsAndRefreshUI();
             }
-
         });
 
         if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
             // refresh if 10 mins have elapsed from last pause
             selectedPackage = "all";
-            refreshDataAndUI();
+            getNotificationsAndRefreshUI();
         }
     }
 
@@ -253,7 +248,7 @@ public class MainActivity extends AppCompatActivity {
                     popup.setOnMenuItemClickListener(menuItem -> {
                         int position = menuItem.getItemId() - 54321;
                         selectedPackage = apps.get(position).first;
-                        refreshDataAndUI();
+                        getNotificationsAndRefreshUI();
                         return true;
                     });
                     popup.show();
@@ -267,9 +262,7 @@ public class MainActivity extends AppCompatActivity {
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             dao.deleteAll();
-                            // no need to refresh notifications view because it is already
-                            // refreshed by the notificationsListener
-                            // refreshDataAndUI();
+                            getNotificationsAndRefreshUI();
 
                             // delete icons whose UUID is not linked to an important sender
                             HashSet<String> activeUUIDs = new HashSet<>(10);
@@ -304,10 +297,10 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
-    public void refreshDataAndUI() {
+    public void getNotificationsAndRefreshUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             List<StoredNotification> notifications = "all".equals(selectedPackage)
-                    ? dao.getAll() : dao.getForPackage(selectedPackage);
+                    ? dao.getAll(1000) : dao.getForPackage(selectedPackage, 1000);
 
             ArrayList<Object> items = new ArrayList<>(1000);
             Date previousDate = null;
