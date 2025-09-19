@@ -99,7 +99,7 @@ public class NotificationService extends NotificationListenerService {
         // asynchronously continue processing, i.e. save notification, icons, etc...
         Executors.newSingleThreadExecutor().execute(() -> {
             SharedPreferences importantSenders = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
-            boolean postNotification = isSilenced /*&& !notificationsPrefs.contains(sn.key)*/;
+            boolean postNotification = isSilenced && dao.getByKey(sn.key) == null;
 
             // save notification
             dao.insert(sn);
