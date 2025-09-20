@@ -83,6 +83,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return null;
     }
 
+    public ArrayList<Object> getItems() {
+        return items;
+    }
+
     public int getBackground(int position) {
         boolean afterHeader = isAfterHeader(position);
         boolean beforeHeader = isBeforeHeader(position);

@@ -48,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -64,6 +65,8 @@ public class MainActivity extends AppCompatActivity {
 
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao dao;
+
+    private HashMap<String, Pair<ArrayList<Object>, Long>> all = new HashMap<>();
 
     private NotificationsAdapter notificationsAdapter;
     private String selectedPackage = "all";
@@ -292,9 +295,10 @@ public class MainActivity extends AppCompatActivity {
     public void getNotificationsAndRefreshUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             List<StoredNotification> notifications = dao.getByPackage(
-                    "all".equals(selectedPackage) ? "%" : selectedPackage, 1000);
+                    "all".equals(selectedPackage) ? "%" : selectedPackage, 10000);
 
-            ArrayList<Object> items = new ArrayList<>(1000);
+            ArrayList<Object> items = notificationsAdapter.getItems();
+            items.clear();
             Date previousDate = null;
             for (StoredNotification notification : notifications) {
                 boolean addHeader = true;
@@ -308,7 +312,7 @@ public class MainActivity extends AppCompatActivity {
                 previousDate = currentDate;
             }
 
-            runOnUiThread(() -> notificationsAdapter.updateData(items));
+            runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
         });
     }
 
