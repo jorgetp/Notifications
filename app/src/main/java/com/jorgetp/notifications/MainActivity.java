@@ -48,7 +48,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -65,8 +64,6 @@ public class MainActivity extends AppCompatActivity {
 
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao dao;
-
-    private HashMap<String, Pair<ArrayList<Object>, Long>> all = new HashMap<>();
 
     private NotificationsAdapter notificationsAdapter;
     private String selectedPackage = "all";

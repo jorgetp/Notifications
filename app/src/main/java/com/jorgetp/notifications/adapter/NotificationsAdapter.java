@@ -122,11 +122,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return items.get(position);
     }
 
-    public void updateData(ArrayList<Object> items) {
-        this.items = items;
-        notifyDataSetChanged();
-    }
-
     @Override
     public int getItemViewType(int position) {
         return getItem(position) instanceof String ? 0 : 1;
