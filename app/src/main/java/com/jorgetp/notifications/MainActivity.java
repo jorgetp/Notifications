@@ -295,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
     public void getNotificationsAndRefreshUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             List<StoredNotification> notifications = dao.getByPackage(
-                    "all".equals(selectedPackage) ? "%" : selectedPackage, 10000);
+                    "all".equals(selectedPackage) ? "%" : selectedPackage, 50);
 
             ArrayList<Object> items = notificationsAdapter.getItems();
             items.clear();
