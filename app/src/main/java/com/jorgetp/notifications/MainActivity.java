@@ -53,6 +53,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
@@ -61,6 +63,7 @@ public class MainActivity extends AppCompatActivity {
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 
+    private ExecutorService executor;
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao dao;
 
@@ -170,6 +173,8 @@ public class MainActivity extends AppCompatActivity {
             dialogBuilder.create().show();
         }
 
+        executor = Executors.newSingleThreadExecutor();
+
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
@@ -196,6 +201,12 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         // save timestamp
         lastPauseTimestamp = System.currentTimeMillis();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        executor.shutdown();
     }
 
     @SuppressLint("RestrictedApi")
@@ -284,7 +295,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void getNotificationsAndRefreshUI() {
-        new Thread(() -> {
+        executor.submit(() -> {
             List<StoredNotification> notifications = dao.getByPackage(
                     "all".equals(selectedPackage) ? "%" : selectedPackage, 50);
 
@@ -303,7 +314,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
             runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
-        }).start();
+        });
     }
 
     public String dateToHeader(Date date) {
