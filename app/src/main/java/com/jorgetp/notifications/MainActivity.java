@@ -53,7 +53,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.TreeSet;
-import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
@@ -177,18 +176,16 @@ public class MainActivity extends AppCompatActivity {
 
         dao = DbProvider.get(getApplicationContext()).notificationDao();
         dao.observeLast().observe(this, last -> {
-            if (last != null && (selectedPackage.equals("all") || selectedPackage.equals(last.packageName))) {
+            if (last != null && (selectedPackage.equals("all") || selectedPackage.equals(last.packageName)))
                 getNotificationsAndRefreshUI();
-            }
         });
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-
+        // refresh if 10 mins have elapsed from last pause
         if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
-            // refresh if 10 mins have elapsed from last pause
             selectedPackage = "all";
             getNotificationsAndRefreshUI();
         }
@@ -221,12 +218,12 @@ public class MainActivity extends AppCompatActivity {
 
         int itemId = item.getItemId();
         if (itemId == R.id.menu_filter) {
-            Executors.newSingleThreadExecutor().execute(() -> {
+            new Thread(() -> {
                 // add a popup menu with the app names as filters
                 List<String> packages = dao.getPackages();
                 ArrayList<Pair<String, String>> apps = new ArrayList<>(packages.size());
                 for (String packageName : packages) {
-                    Pair<CharSequence, Drawable> appInfo = getAppInfo(this, packageName);
+                    Pair<CharSequence, Drawable> appInfo = getAppInfo(MainActivity.this, packageName);
                     apps.add(new Pair<>(packageName, appInfo.first.toString()));
                 }
                 apps.add(new Pair<>("all", getString(R.string.all)));
@@ -245,36 +242,34 @@ public class MainActivity extends AppCompatActivity {
                     });
                     popup.show();
                 });
-            });
+            }).start();
             return true;
 
         } else if (itemId == R.id.menu_clear_all_except_today) {
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_delete_all)
-                    .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                        Executors.newSingleThreadExecutor().execute(() -> {
-                            dao.deleteAll();
-                            getNotificationsAndRefreshUI();
+                    .setPositiveButton(android.R.string.yes, (dialog, id) -> new Thread(() -> {
+                        dao.deleteAll();
+                        getNotificationsAndRefreshUI();
 
-                            // delete icons whose UUID is not linked to an important sender
-                            HashSet<String> activeUUIDs = new HashSet<>(10);
-                            for (Object uuid : importantSendersPrefs.getAll().values())
-                                activeUUIDs.add(uuid.toString());
+                        // delete icons whose UUID is not linked to an important sender
+                        HashSet<String> activeUUIDs = new HashSet<>(10);
+                        for (Object uuid : importantSendersPrefs.getAll().values())
+                            activeUUIDs.add(uuid.toString());
 
-                            // delete files
-                            for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
-                                String fileName = file.getName();
-                                if (!fileName.startsWith("notification_icon_"))
-                                    continue;
+                        // delete files
+                        for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
+                            String fileName = file.getName();
+                            if (!fileName.startsWith("notification_icon_"))
+                                continue;
 
-                                String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
-                                if (!activeUUIDs.contains(uuid)) {
-                                    if (file.delete())
-                                        Log.d("MainActivity", "Icon deleted: " + fileName);
-                                }
+                            String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
+                            if (!activeUUIDs.contains(uuid)) {
+                                if (file.delete())
+                                    Log.d("MainActivity", "Icon deleted: " + fileName);
                             }
-                        });
-                    })
+                        }
+                    }).start())
                     .setNegativeButton(android.R.string.cancel, null)
                     .create()
                     .show();
@@ -285,12 +280,11 @@ public class MainActivity extends AppCompatActivity {
             return true;
 
         }
-
         return false;
     }
 
     public void getNotificationsAndRefreshUI() {
-        Executors.newSingleThreadExecutor().execute(() -> {
+        new Thread(() -> {
             List<StoredNotification> notifications = dao.getByPackage(
                     "all".equals(selectedPackage) ? "%" : selectedPackage, 50);
 
@@ -300,9 +294,8 @@ public class MainActivity extends AppCompatActivity {
             for (StoredNotification notification : notifications) {
                 boolean addHeader = true;
                 Date currentDate = toDate(notification.postTime);
-                if (previousDate != null) {
+                if (previousDate != null)
                     addHeader = !isSameDay(previousDate, currentDate);
-                }
                 if (addHeader)
                     items.add(dateToHeader(currentDate));
                 items.add(notification);
@@ -310,16 +303,16 @@ public class MainActivity extends AppCompatActivity {
             }
 
             runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
-        });
+        }).start();
     }
 
     public String dateToHeader(Date date) {
         if (date != null) {
-            if (isToday(date)) {
+            if (isToday(date))
                 return getString(R.string.today);
-            } else if (isYesterday(date)) {
+            else if (isYesterday(date))
                 return getString(R.string.yesterday);
-            } else {
+            else {
                 SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
                 return sdf.format(date);
             }

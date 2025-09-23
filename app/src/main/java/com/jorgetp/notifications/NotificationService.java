@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
     private final Random random = new Random();
@@ -41,15 +40,12 @@ public class NotificationService extends NotificationListenerService {
     @Override
     public void onNotificationPosted(StatusBarNotification sbn) {
         if (isSilentNotification(sbn)) {
-            if (isStandardNotification(sbn)) {
-                processNotification(sbn, true);
-            }
+            if (isStandardNotification(sbn)) processNotification(sbn, true);
         } else {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                if (isStandardNotification(sbn)) {
-                    processNotification(sbn, false);
-                }
-            });
+            // asynchronously process non-silenced notifications
+            new Thread(() -> {
+                if (isStandardNotification(sbn)) processNotification(sbn, false);
+            }).start();
         }
     }
 
@@ -97,8 +93,8 @@ public class NotificationService extends NotificationListenerService {
             cancelNotification(sbn.getKey());
 
         // asynchronously continue processing, i.e. save notification, icons, etc...
-        Executors.newSingleThreadExecutor().execute(() -> {
-            SharedPreferences importantSenders = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
+        new Thread(() -> {
+            SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
             boolean postNotification = isSilenced && dao.getByKey(sn.key) == null;
 
             // save notification
@@ -109,7 +105,7 @@ public class NotificationService extends NotificationListenerService {
             if (largeIconDrawable[0] != null && largeIconDrawable[0] instanceof BitmapDrawable) {
                 largeIconBitmap[0] = ((BitmapDrawable) largeIconDrawable[0]).getBitmap();
 
-                Executors.newSingleThreadExecutor().execute(() -> {
+                new Thread(() -> {
                     try (FileOutputStream fos = openFileOutput("notification_icon_" + sn.uuid + ".png",
                             Context.MODE_PRIVATE)) {
                         largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
@@ -122,7 +118,7 @@ public class NotificationService extends NotificationListenerService {
                     } catch (IOException e) {
                         Log.e("NotificationService", "Error saving notification icon", e);
                     }
-                });
+                }).start();
             }
 
             // post silenced notification
@@ -130,7 +126,7 @@ public class NotificationService extends NotificationListenerService {
                 postSilencedNotification(sn, smallIcon, largeIconBitmap[0]);
 
             Log.d("NotificationService", "Notification processed: " + sn.key);
-        });
+        }).start();
     }
 
     public boolean isStandardNotification(StatusBarNotification sbn) {
