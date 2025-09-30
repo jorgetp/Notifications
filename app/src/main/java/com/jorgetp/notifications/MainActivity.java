@@ -1,9 +1,6 @@
 package com.jorgetp.notifications;
 
 import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -11,8 +8,6 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.provider.Settings;
-import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.view.Menu;
@@ -125,21 +120,6 @@ public class MainActivity extends AppCompatActivity {
         return givenDate.equals(yesterday);
     }
 
-    private boolean isNotificationServiceEnabled() {
-        String pkgName = getPackageName();
-        String enabledListeners = Settings.Secure.getString(getContentResolver(),
-                "enabled_notification_listeners");
-        if (!TextUtils.isEmpty(enabledListeners)) {
-            String[] listeners = enabledListeners.split(":");
-            for (String listener : listeners) {
-                ComponentName cn = ComponentName.unflattenFromString(listener);
-                if (cn != null && TextUtils.equals(pkgName, cn.getPackageName())) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -151,28 +131,6 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-
-        if (isNotificationServiceEnabled()) {
-            NotificationManager notificationManager = (NotificationManager) getSystemService(
-                    Context.NOTIFICATION_SERVICE);
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    getString(R.string.app_name),
-                    NotificationManager.IMPORTANCE_HIGH);
-            notificationManager.createNotificationChannel(channel);
-        } else {
-            AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
-                    .setTitle(R.string.app_name)
-                    .setMessage(R.string.enable_as_nsl)
-                    .setCancelable(false)
-                    .setPositiveButton(android.R.string.ok,
-                            (dialog, id) -> startActivity(
-                                    new Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")))
-                    .setNegativeButton(android.R.string.cancel,
-                            (dialog, id) -> MainActivity.this.finishAndRemoveTask());
-            dialogBuilder.create().show();
-        }
-
         executor = Executors.newSingleThreadExecutor();
 
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);

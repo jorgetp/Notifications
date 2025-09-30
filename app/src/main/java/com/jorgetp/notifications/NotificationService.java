@@ -136,6 +136,7 @@ public class NotificationService extends NotificationListenerService {
         // 2. Must be user-clearable
         if (!sbn.isClearable())
             return false;
+        /*
         // 3. Must NOT be an ongoing event
         if (sbn.isOngoing())
             return false;
@@ -151,7 +152,7 @@ public class NotificationService extends NotificationListenerService {
                 case Notification.CATEGORY_NAVIGATION:
                     return false;
             }
-        }
+        }*/
         return true;
     }
 
