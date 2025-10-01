@@ -48,8 +48,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     public static Bitmap createIconBitmap(String packageName, String sender) {
         try {
             int lastIndex = sender.lastIndexOf(":");
-            String actualSender = (lastIndex == -1 || lastIndex == sender.length() - 1) ?
-                    sender : sender.substring(lastIndex + 1).strip();
+            String actualSender = (lastIndex == -1 || lastIndex == sender.length() - 1) ? sender
+                    : sender.substring(lastIndex + 1).strip();
 
             // continue only if first char is a letter
             if (Character.isLetter(actualSender.charAt(0))) {
@@ -91,9 +91,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     public int getBackground(int position) {
         boolean afterHeader = isAfterHeader(position);
         boolean beforeHeader = isBeforeHeader(position);
-        if (afterHeader && beforeHeader) return R.drawable.rounded_all;
-        if (afterHeader) return R.drawable.rounded_top;
-        if (beforeHeader) return R.drawable.rounded_bottom;
+        if (afterHeader && beforeHeader)
+            return R.drawable.rounded_all;
+        if (afterHeader)
+            return R.drawable.rounded_top;
+        if (beforeHeader)
+            return R.drawable.rounded_bottom;
         return R.drawable.rounded_none;
     }
 
@@ -155,9 +158,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.itemView.setBackgroundResource(getBackground(i));
             holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
-            // Limit tvTitle width (e.g., 160dp)
+            // Limit tvTitle width to 162dp
             holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 160,
+                    TypedValue.COMPLEX_UNIT_DIP, 162,
                     holder.itemView.getResources().getDisplayMetrics()));
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
@@ -192,10 +195,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.ivSenderIcon.setVisibility(View.GONE);
             String category = notification.category;
             if (Notification.CATEGORY_MESSAGE.equals(category)
-                /*|| Notification.CATEGORY_EMAIL.equals(category)
-                || Notification.CATEGORY_SOCIAL.equals(category)
-                || Notification.CATEGORY_CALL.equals(category)
-                || Notification.CATEGORY_MISSED_CALL.equals(category)*/) {
+                /*
+                 * || Notification.CATEGORY_EMAIL.equals(category)
+                 * || Notification.CATEGORY_SOCIAL.equals(category)
+                 * || Notification.CATEGORY_CALL.equals(category)
+                 * || Notification.CATEGORY_MISSED_CALL.equals(category)
+                 */) {
                 Bitmap bm = createIconBitmap(packageName, title);
                 if (bm != null)
                     holder.ivSenderIcon.setImageBitmap(bm);
@@ -222,14 +227,16 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
                     if (itemId == R.id.copy_title) {
-                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipboardManager clipboard = (ClipboardManager) context
+                                .getSystemService(Context.CLIPBOARD_SERVICE);
                         ClipData clip = ClipData.newPlainText("Notification title", title);
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(context, R.string.copied_title, Toast.LENGTH_SHORT).show();
                         return true;
 
                     } else if (itemId == R.id.copy_text) {
-                        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+                        ClipboardManager clipboard = (ClipboardManager) context
+                                .getSystemService(Context.CLIPBOARD_SERVICE);
                         ClipData clip = ClipData.newPlainText("Notification text", text);
                         clipboard.setPrimaryClip(clip);
                         Toast.makeText(context, R.string.copied_text, Toast.LENGTH_SHORT).show();
