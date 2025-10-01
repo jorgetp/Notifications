@@ -14,6 +14,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.util.Pair;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -153,6 +154,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.itemView.setBackgroundResource(getBackground(i));
             holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
+
+            // Limit tvTitle width (e.g., 160dp)
+            holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP, 160,
+                    holder.itemView.getResources().getDisplayMetrics()));
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
