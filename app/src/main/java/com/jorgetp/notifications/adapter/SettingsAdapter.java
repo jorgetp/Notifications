@@ -230,7 +230,7 @@ public class SettingsAdapter extends NotificationsAdapter {
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
-            holder.tvSender.setText(sender.sender);
+            holder.tvSender.setText(!sender.sender.isEmpty() ? sender.sender : context.getString(R.string.no_title));
 
             // app icon
             if (appInfo.second != null)
