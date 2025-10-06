@@ -193,6 +193,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             // sender icon
             holder.ivSenderIcon.setVisibility(View.GONE);
+
+            // always show sender icon for selected categories
             String category = notification.category;
             if (Notification.CATEGORY_MESSAGE.equals(category)
                 /*
@@ -201,12 +203,15 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                  * || Notification.CATEGORY_CALL.equals(category)
                  * || Notification.CATEGORY_MISSED_CALL.equals(category)
                  */) {
+                holder.ivSenderIcon.setVisibility(View.VISIBLE);
                 Bitmap bm = createIconBitmap(packageName, title);
                 if (bm != null)
                     holder.ivSenderIcon.setImageBitmap(bm);
-                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                else
+                    holder.ivSenderIcon.setImageResource(R.drawable.ic_person_round);
             }
 
+            // load sender icon from file system
             try (FileInputStream fis = context
                     .openFileInput("notification_icon_" + notification.uuid + ".png")) {
                 Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
