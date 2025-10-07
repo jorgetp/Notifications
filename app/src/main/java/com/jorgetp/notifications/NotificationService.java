@@ -139,7 +139,7 @@ public class NotificationService extends NotificationListenerService {
         // 3. Must NOT be an ongoing event
         if (sbn.isOngoing())
             return false;
-        /*// 4. Must NOT be a system/background category
+        // 4. Must NOT be a system/background category
         String category = sbn.getNotification().category;
         if (category != null) {
             switch (category) {
@@ -151,7 +151,7 @@ public class NotificationService extends NotificationListenerService {
                 case Notification.CATEGORY_NAVIGATION:
                     return false;
             }
-        }*/
+        }
         return true;
     }
 

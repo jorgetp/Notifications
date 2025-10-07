@@ -39,7 +39,7 @@ import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     protected final Context context;
-    protected ArrayList<Object> items = new ArrayList<>();
+    protected ArrayList<Object> items;
 
     public NotificationsAdapter(Context context) {
         this.context = context;
@@ -84,8 +84,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return null;
     }
 
-    public ArrayList<Object> getItems() {
-        return items;
+    public void setItems(ArrayList<Object> items) {
+        this.items = items;
     }
 
     public int getBackground(int position) {
@@ -114,7 +114,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     @Override
     public int getItemCount() {
-        return items.size();
+        return items == null ? 0 : items.size();
     }
 
     @Override

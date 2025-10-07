@@ -38,10 +38,10 @@
             </intent-filter>
             <!--<meta-data
                 android:name="android.service.notification.default_filter_types"
-                android:value="conversations|alerting"/>-->
+                android:value="conversations|alerting"/>
             <meta-data
                 android:name="android.service.notification.disabled_filter_types"
-                android:value="ongoing|call|alarm|progress|transport|navigation" />
+                android:value="ongoing|call|alarm|progress|transport|navigation" />-->
         </service>
     </application>
 

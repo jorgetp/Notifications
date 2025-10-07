@@ -254,11 +254,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void getNotificationsAndRefreshUI() {
         executor.submit(() -> {
+            int limit = 50;
             List<StoredNotification> notifications = dao.getByPackage(
-                    "all".equals(selectedPackage) ? "%" : selectedPackage, 50);
+                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
 
-            ArrayList<Object> items = notificationsAdapter.getItems();
-            items.clear();
+            ArrayList<Object> items = new ArrayList<>(limit);
             Date previousDate = null;
             for (StoredNotification notification : notifications) {
                 boolean addHeader = true;
@@ -271,7 +271,10 @@ public class MainActivity extends AppCompatActivity {
                 previousDate = currentDate;
             }
 
-            runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
+            runOnUiThread(() -> {
+                notificationsAdapter.setItems(items);
+                notificationsAdapter.notifyDataSetChanged();
+            });
         });
     }
 
