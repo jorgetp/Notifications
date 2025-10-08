@@ -68,7 +68,7 @@ public class SettingsAdapter extends NotificationsAdapter {
 
                 });
 
-        items.clear();
+        items = new ArrayList<>(10);
 
         // General settings
         items.add(context.getString(R.string.general));
