@@ -74,20 +74,6 @@ public class SettingsAdapter extends NotificationsAdapter {
         items.add(context.getString(R.string.general));
         items.add(new Switch(context.getString(R.string.nsl_enabled), ((SettingsActivity) context).isNotificationServiceEnabled()));
 
-        // silenced apps
-        ArrayList<SilencedApp> apps = new ArrayList<>(10);
-        SharedPreferences prefs1 = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
-        for (Map.Entry<String, ?> entry : prefs1.getAll().entrySet()) {
-            String packageName = entry.getKey();
-            Integer silencedWhen = (Integer) entry.getValue();
-            apps.add(new SilencedApp(packageName, silencedWhen));
-        }
-        apps.sort(Comparator
-                .comparing(app -> MainActivity.getAppInfo(context, app.packageName).first.toString().toLowerCase()));
-
-        items.add(context.getString(R.string.silenced_apps));
-        items.addAll(apps);
-
         // important senders
         ArrayList<ImportantSender> senders = new ArrayList<>(10);
         SharedPreferences prefs2 = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
@@ -101,6 +87,20 @@ public class SettingsAdapter extends NotificationsAdapter {
 
         items.add(context.getString(R.string.important_senders));
         items.addAll(senders);
+
+        // silenced apps
+        ArrayList<SilencedApp> apps = new ArrayList<>(10);
+        SharedPreferences prefs1 = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
+        for (Map.Entry<String, ?> entry : prefs1.getAll().entrySet()) {
+            String packageName = entry.getKey();
+            Integer silencedWhen = (Integer) entry.getValue();
+            apps.add(new SilencedApp(packageName, silencedWhen));
+        }
+        apps.sort(Comparator
+                .comparing(app -> MainActivity.getAppInfo(context, app.packageName).first.toString().toLowerCase()));
+
+        items.add(context.getString(R.string.silenced_apps));
+        items.addAll(apps);
     }
 
     public TreeSet<String> getEditedItems() {
