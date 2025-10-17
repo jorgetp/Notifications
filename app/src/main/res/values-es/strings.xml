@@ -24,5 +24,6 @@
     <string name="copied_title">Remitente copiado</string>
     <string name="copied_text">Mensaje copiado</string>
     <string name="silenced_notification">%s (silenciada)</string>
-    <string name="no_title">(Sin Titulo/Remitente)</string>
+    <string name="no_title">(Sin remitente)</string>
+    <string name="general">General</string>
 </resources>

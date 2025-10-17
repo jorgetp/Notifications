@@ -24,6 +24,6 @@
     <string name="copied_title">Copied title</string>
     <string name="copied_text">Copied text</string>
     <string name="silenced_notification">%s (silenced)</string>
-    <string name="no_title">(No Title/Sender)</string>
+    <string name="no_title">(No sender)</string>
     <string name="general">General</string>
 </resources>

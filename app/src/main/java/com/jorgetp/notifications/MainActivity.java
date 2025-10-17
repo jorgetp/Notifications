@@ -187,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
 
         int itemId = item.getItemId();
         if (itemId == R.id.menu_filter) {
-            new Thread(() -> {
+            Executors.newSingleThreadExecutor().execute(() -> {
                 // add a popup menu with the app names as filters
                 List<String> packages = dao.getPackages();
                 ArrayList<Pair<String, String>> apps = new ArrayList<>(packages.size());
@@ -211,34 +211,36 @@ public class MainActivity extends AppCompatActivity {
                     });
                     popup.show();
                 });
-            }).start();
+            });
             return true;
 
         } else if (itemId == R.id.menu_clear_all_except_today) {
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_delete_all)
-                    .setPositiveButton(android.R.string.yes, (dialog, id) -> new Thread(() -> {
-                        dao.deleteAll();
-                        getNotificationsAndRefreshUI();
+                    .setPositiveButton(android.R.string.yes, (dialog, id) -> {
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            dao.deleteAll();
+                            getNotificationsAndRefreshUI();
 
-                        // delete icons whose UUID is not linked to an important sender
-                        HashSet<String> activeUUIDs = new HashSet<>(10);
-                        for (Object uuid : importantSendersPrefs.getAll().values())
-                            activeUUIDs.add(uuid.toString());
+                            // delete icons whose UUID is not linked to an important sender
+                            HashSet<String> activeUUIDs = new HashSet<>(10);
+                            for (Object uuid : importantSendersPrefs.getAll().values())
+                                activeUUIDs.add(uuid.toString());
 
-                        // delete files
-                        for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
-                            String fileName = file.getName();
-                            if (!fileName.startsWith("notification_icon_"))
-                                continue;
+                            // delete files
+                            for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
+                                String fileName = file.getName();
+                                if (!fileName.startsWith("notification_icon_"))
+                                    continue;
 
-                            String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
-                            if (!activeUUIDs.contains(uuid)) {
-                                if (file.delete())
-                                    Log.d("MainActivity", "Icon deleted: " + fileName);
+                                String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
+                                if (!activeUUIDs.contains(uuid)) {
+                                    if (file.delete())
+                                        Log.d("MainActivity", "Icon deleted: " + fileName);
+                                }
                             }
-                        }
-                    }).start())
+                        });
+                    })
                     .setNegativeButton(android.R.string.cancel, null)
                     .create()
                     .show();
@@ -271,10 +273,8 @@ public class MainActivity extends AppCompatActivity {
                 previousDate = currentDate;
             }
 
-            runOnUiThread(() -> {
-                notificationsAdapter.setItems(items);
-                notificationsAdapter.notifyDataSetChanged();
-            });
+            notificationsAdapter.setItems(items);
+            runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
         });
     }
 

@@ -208,7 +208,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 if (bm != null)
                     holder.ivSenderIcon.setImageBitmap(bm);
                 else
-                    holder.ivSenderIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+                    holder.ivSenderIcon.setImageResource(R.drawable.outline_person_24);
             }
 
             // load sender icon from file system
