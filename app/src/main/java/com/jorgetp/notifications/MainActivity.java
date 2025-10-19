@@ -285,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
             else if (isYesterday(date))
                 return getString(R.string.yesterday);
             else {
-                SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy", Locale.getDefault());
+                SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault());
                 return sdf.format(date);
             }
         }

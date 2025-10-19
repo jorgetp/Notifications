@@ -203,12 +203,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                  * || Notification.CATEGORY_CALL.equals(category)
                  * || Notification.CATEGORY_MISSED_CALL.equals(category)
                  */) {
-                holder.ivSenderIcon.setVisibility(View.VISIBLE);
                 Bitmap bm = createIconBitmap(packageName, title);
-                if (bm != null)
+                if (bm != null) {
+                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
                     holder.ivSenderIcon.setImageBitmap(bm);
-                else
-                    holder.ivSenderIcon.setImageResource(R.drawable.outline_person_24);
+                }
             }
 
             // load sender icon from file system
