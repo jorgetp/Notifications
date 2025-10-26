@@ -152,7 +152,6 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.switch1.setChecked(((Switch) getItem(i)).checked);
 
             holder.itemView.setBackgroundResource(getBackground(i));
-            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             holder.switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 if (buttonView.isPressed()) { // to avoid infinite loop when updating the switch state programmatically
@@ -168,7 +167,6 @@ public class SettingsAdapter extends NotificationsAdapter {
 
             SilencedApp app = (SilencedApp) getItem(i);
             holder.itemView.setBackgroundResource(getBackground(i));
-            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
@@ -226,7 +224,6 @@ public class SettingsAdapter extends NotificationsAdapter {
 
             ImportantSender sender = (ImportantSender) getItem(i);
             holder.itemView.setBackgroundResource(getBackground(i));
-            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
@@ -275,14 +272,12 @@ public class SettingsAdapter extends NotificationsAdapter {
         ImageView ivAppIcon;
         ImageView ivSenderIcon;
         TextView tvSender;
-        View divider;
 
         public ImportantSenderViewHolder(@NonNull View itemView) {
             super(itemView);
             ivAppIcon = itemView.findViewById(R.id.ivAppIcon);
             ivSenderIcon = itemView.findViewById(R.id.ivSenderIcon);
             tvSender = itemView.findViewById(R.id.tvTitle);
-            divider = itemView.findViewById(R.id.divider);
 
             itemView.findViewById(R.id.tvTime).setVisibility(View.GONE);
             ((TextView) itemView.findViewById(R.id.tvText)).setText(R.string.tap_to_unset_as_important);
@@ -305,14 +300,12 @@ public class SettingsAdapter extends NotificationsAdapter {
         ImageView ivIcon;
         TextView tvApp;
         TextView tvSilencedWhen;
-        View divider;
 
         public SilencedAppViewHolder(@NonNull View itemView) {
             super(itemView);
             ivIcon = itemView.findViewById(R.id.ivAppIcon);
             tvApp = itemView.findViewById(R.id.tvTitle);
             tvSilencedWhen = itemView.findViewById(R.id.tvText);
-            divider = itemView.findViewById(R.id.divider);
 
             itemView.findViewById(R.id.tvTime).setVisibility(View.GONE);
             itemView.findViewById(R.id.ivSenderIcon).setVisibility(View.GONE);
@@ -342,13 +335,11 @@ public class SettingsAdapter extends NotificationsAdapter {
     public static class SwitchViewHolder extends RecyclerView.ViewHolder {
         SwitchCompat switch1;
         ImageView ivIcon;
-        View divider;
 
         public SwitchViewHolder(@NonNull View itemView) {
             super(itemView);
             switch1 = itemView.findViewById(R.id.switch1);
             ivIcon = itemView.findViewById(R.id.ivIcon);
-            divider = itemView.findViewById(R.id.divider);
         }
     }
 }

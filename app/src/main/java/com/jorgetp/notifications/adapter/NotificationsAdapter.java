@@ -108,10 +108,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         return position == getItemCount() - 1 || getItem(position + 1) instanceof String;
     }
 
-    public boolean isDividerVisible(int position) {
-        return !isBeforeHeader(position);
-    }
-
     @Override
     public int getItemCount() {
         return items == null ? 0 : items.size();
@@ -156,7 +152,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             ItemViewHolder holder = (ItemViewHolder) holderGeneric;
 
             holder.itemView.setBackgroundResource(getBackground(i));
-            holder.divider.setVisibility(isDividerVisible(i) ? View.VISIBLE : View.GONE);
 
             // Limit tvTitle width to 162dp
             holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
@@ -276,7 +271,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         TextView tvTime;
         TextView tvTitle;
         TextView tvText;
-        View divider;
 
         public ItemViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -285,7 +279,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             tvTime = itemView.findViewById(R.id.tvTime);
             tvTitle = itemView.findViewById(R.id.tvTitle);
             tvText = itemView.findViewById(R.id.tvText);
-            divider = itemView.findViewById(R.id.divider);
         }
     }
 
