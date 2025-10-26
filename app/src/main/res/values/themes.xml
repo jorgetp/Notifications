@@ -2,7 +2,6 @@
     <!-- Base application theme. -->
     <style name="Theme.Notifications" parent="Theme.Material3.DynamicColors.DayNight">
         <!-- Customize your theme here. -->
-        <!-- <item name="android:windowBackground">@color/window_background</item> -->
-        <item name="android:windowBackground">?attr/colorSurfaceContainerHigh</item>
+        <item name="android:windowBackground">?attr/colorSurfaceContainerLow</item>
     </style>
 </resources>
