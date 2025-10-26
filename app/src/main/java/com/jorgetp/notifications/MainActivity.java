@@ -195,8 +195,8 @@ public class MainActivity extends AppCompatActivity {
                     Pair<CharSequence, Drawable> appInfo = getAppInfo(MainActivity.this, packageName);
                     apps.add(new Pair<>(packageName, appInfo.first.toString()));
                 }
-                apps.add(new Pair<>("all", getString(R.string.all)));
                 apps.sort(Comparator.comparing(o -> o.second.toLowerCase()));
+                apps.add(0, new Pair<>("all", getString(R.string.all)));
 
                 runOnUiThread(() -> {
                     PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
@@ -286,7 +286,10 @@ public class MainActivity extends AppCompatActivity {
                 return getString(R.string.yesterday);
             else {
                 SimpleDateFormat sdf = new SimpleDateFormat("EEE, d MMM yyyy", Locale.getDefault());
-                return sdf.format(date);
+                // capitalize first letter
+                char[] chars = sdf.format(date).toCharArray();
+                chars[0] = Character.toUpperCase(chars[0]);
+                return new String(chars);
             }
         }
         return "";
