@@ -131,6 +131,9 @@ public class MainActivity extends AppCompatActivity {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
+        androidx.appcompat.widget.Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
         executor = Executors.newSingleThreadExecutor();
 
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
