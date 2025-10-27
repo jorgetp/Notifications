@@ -27,7 +27,7 @@ import com.jorgetp.notifications.dao.DbProvider;
 import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredNotification;
 
-import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
 import java.util.Random;
@@ -67,65 +67,95 @@ public class NotificationService extends NotificationListenerService {
         String title = extras.getString(Notification.EXTRA_TITLE);
         CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
 
-        // Get DAO
-        NotificationDao dao = DbProvider.get(getApplicationContext()).notificationDao();
+        // Get icons
+        Icon smallIcon = notification.getSmallIcon();
+        Icon largeIcon = notification.getLargeIcon();
+        byte[] largeIconBytesNotFinal = null;
+
+        // Convert large icon to byte array
+        if (largeIcon != null) {
+            try {
+                Drawable largeIconDrawable = largeIcon.loadDrawable(getApplicationContext());
+                if (largeIconDrawable != null) {
+                    Bitmap bitmap;
+                    if (largeIconDrawable instanceof BitmapDrawable) {
+                        bitmap = ((BitmapDrawable) largeIconDrawable).getBitmap();
+                    } else {
+                        // Convert non-BitmapDrawable to Bitmap
+                        bitmap = Bitmap.createBitmap(
+                                largeIconDrawable.getIntrinsicWidth(),
+                                largeIconDrawable.getIntrinsicHeight(),
+                                Bitmap.Config.ARGB_8888);
+                        Canvas canvas = new Canvas(bitmap);
+                        largeIconDrawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+                        largeIconDrawable.draw(canvas);
+                    }
+
+                    // Convert bitmap to byte array
+                    largeIconBytesNotFinal = bitmapToByteArray(bitmap);
+                }
+            } catch (Exception e) {
+                Log.e("NotificationService", "Error converting large icon to bitmap", e);
+            }
+        }
+
+        final byte[] largeIconBytes = largeIconBytesNotFinal;
+
+        // Create StoredNotification with icon data
         StoredNotification sn = new StoredNotification(
                 sbn.getPostTime(),
                 UUID.randomUUID().toString(),
                 sbn.getPackageName(),
                 title != null ? title : "",
                 text != null ? text.toString() : "",
-                notification.category
+                notification.category,
+                largeIconBytes // Include icon bytes
         );
-
-        // get icons
-        Icon smallIcon = notification.getSmallIcon();
-        Icon largeIcon = notification.getLargeIcon();
-        Drawable[] largeIconDrawable = {null};
-        if (largeIcon != null) {
-            try {
-                largeIconDrawable[0] = largeIcon.loadDrawable(getApplicationContext());
-            } catch (Exception e) {
-                Log.e("NotificationService", "Error converting large icon to bitmap", e);
-            }
-        }
 
         if (isSilenced)
             cancelNotification(sbn.getKey());
 
-        // asynchronously continue processing, i.e. save notification, icons, etc...
+        // Asynchronously continue processing
         Executors.newSingleThreadExecutor().execute(() -> {
+            NotificationDao dao = DbProvider.get(getApplicationContext()).notificationDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
             boolean postNotification = isSilenced && dao.getByKey(sn.key) == null;
 
-            // save notification
+            // Save notification
             dao.insert(sn);
 
-            // save icon to storage
-            Bitmap[] largeIconBitmap = {null};
-            if (largeIconDrawable[0] != null && largeIconDrawable[0] instanceof BitmapDrawable) {
-                largeIconBitmap[0] = ((BitmapDrawable) largeIconDrawable[0]).getBitmap();
-
-                try (FileOutputStream fos = openFileOutput("notification_icon_" + sn.uuid + ".png",
-                        Context.MODE_PRIVATE)) {
-                    largeIconBitmap[0].compress(Bitmap.CompressFormat.PNG, 100, fos);
-
-                    // update important sender icon if applicable
-                    String key = sbn.getPackageName() + "/" + title;
-                    if (importantSenders.contains(key))
-                        importantSenders.edit().putString(key, sn.uuid).apply();
-
-                } catch (IOException e) {
-                    Log.e("NotificationService", "Error saving notification icon", e);
-                }
+            // Update important sender icon if applicable
+            if (largeIconBytes != null) {
+                String key = sbn.getPackageName() + "/" + title;
+                if (importantSenders.contains(key))
+                    importantSenders.edit().putString(key, sn.uuid).apply();
             }
 
-            // post silenced notification
-            if (postNotification)
-                postSilencedNotification(sn, smallIcon, largeIconBitmap[0]);
+            // Post silenced notification
+            if (postNotification) {
+                Bitmap largeIconBitmap = largeIconBytes != null ? byteArrayToBitmap(largeIconBytes) : null;
+                postSilencedNotification(sn, smallIcon, largeIconBitmap);
+            }
 
             Log.d("NotificationService", "Notification processed: " + sn.key);
         });
+    }
+
+    // Helper method to convert Bitmap to byte array
+    private byte[] bitmapToByteArray(Bitmap bitmap) {
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
+            return stream.toByteArray();
+        } catch (IOException e) {
+            Log.e("NotificationService", "Error converting bitmap to bytes", e);
+            return null;
+        }
+    }
+
+    // Helper method to convert byte array back to Bitmap
+    private Bitmap byteArrayToBitmap(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return null;
+        return android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
     }
 
     public boolean isStandardNotification(StatusBarNotification sbn) {
@@ -208,7 +238,7 @@ public class NotificationService extends NotificationListenerService {
     }
 
     private void postSilencedNotification(StoredNotification notification, Icon smallIcon, Bitmap largeIcon) {
-        // create notification builder
+        // Create notification builder
         Notification.Builder builder = new Notification.Builder(getApplicationContext(), CHANNEL_ID)
                 .setSmallIcon(R.drawable.outline_notifications_off_24)
                 .setContentTitle(getString(R.string.silenced_notification, notification.title))
@@ -217,20 +247,17 @@ public class NotificationService extends NotificationListenerService {
                 .setShowWhen(true)
                 .setWhen(notification.postTime);
 
-        /*if (smallIcon != null)
-            builder.setSmallIcon(smallIcon);*/
-
-        if (largeIcon != null)
+        if (largeIcon != null) {
             builder.setLargeIcon(largeIcon);
-        else {
-            // set large icon as the original app icon
+        } else {
+            // Set large icon as the original app icon (fallback)
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(getApplicationContext(), notification.packageName);
             if (appInfo.second != null) {
                 Bitmap iconBitmap;
                 if (appInfo.second instanceof BitmapDrawable) {
                     iconBitmap = ((BitmapDrawable) appInfo.second).getBitmap();
                 } else {
-                    // convert non-BitmapDrawable to Bitmap
+                    // Convert non-BitmapDrawable to Bitmap
                     iconBitmap = Bitmap.createBitmap(
                             appInfo.second.getIntrinsicWidth(),
                             appInfo.second.getIntrinsicHeight(),
@@ -239,12 +266,11 @@ public class NotificationService extends NotificationListenerService {
                     appInfo.second.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
                     appInfo.second.draw(canvas);
                 }
-
                 builder.setLargeIcon(iconBitmap);
             }
         }
 
-        // set tap action to open notification's original activity
+        // Set tap action to open notification's original activity
         Intent launchIntent = getPackageManager().getLaunchIntentForPackage(notification.packageName);
         if (launchIntent != null) {
             builder.setContentIntent(PendingIntent.getActivity(
@@ -252,7 +278,7 @@ public class NotificationService extends NotificationListenerService {
                     PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
         }
 
-        // finally notify
+        // Finally notify
         manager.notify(random.nextInt(Integer.MAX_VALUE), builder.build());
     }
 }

@@ -31,7 +31,6 @@ import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.dao.StoredNotification;
 
-import java.io.FileInputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -82,6 +81,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         return null;
+    }
+
+    // Helper method to convert byte array back to Bitmap
+    private Bitmap byteArrayToBitmap(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return null;
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
     }
 
     public void setItems(ArrayList<Object> items) {
@@ -189,30 +194,29 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // sender icon
             holder.ivSenderIcon.setVisibility(View.GONE);
 
-            // always show sender icon for selected categories
-            String category = notification.category;
-            if (Notification.CATEGORY_MESSAGE.equals(category)
-                /*
-                 * || Notification.CATEGORY_EMAIL.equals(category)
-                 * || Notification.CATEGORY_SOCIAL.equals(category)
-                 * || Notification.CATEGORY_CALL.equals(category)
-                 * || Notification.CATEGORY_MISSED_CALL.equals(category)
-                 */) {
-                Bitmap bm = createIconBitmap(packageName, title);
-                if (bm != null) {
+            // First try to load large icon from database
+            if (notification.largeIcon != null && notification.largeIcon.length > 0) {
+                Bitmap iconBitmap = byteArrayToBitmap(notification.largeIcon);
+                if (iconBitmap != null) {
+                    holder.ivSenderIcon.setImageBitmap(iconBitmap);
                     holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                    holder.ivSenderIcon.setImageBitmap(bm);
                 }
-            }
-
-            // load sender icon from file system
-            try (FileInputStream fis = context
-                    .openFileInput("notification_icon_" + notification.uuid + ".png")) {
-                Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-                holder.ivSenderIcon.setImageBitmap(iconBitmap);
-                holder.ivSenderIcon.setVisibility(View.VISIBLE);
-            } catch (Exception e) {
-                // Log.e("NotificationsAdapter", "Icon not found", e);
+            } else {
+                // Fallback: show sender icon for selected categories
+                String category = notification.category;
+                if (Notification.CATEGORY_MESSAGE.equals(category)
+                    /*
+                     * || Notification.CATEGORY_EMAIL.equals(category)
+                     * || Notification.CATEGORY_SOCIAL.equals(category)
+                     * || Notification.CATEGORY_CALL.equals(category)
+                     * || Notification.CATEGORY_MISSED_CALL.equals(category)
+                     */) {
+                    Bitmap bm = createIconBitmap(packageName, title);
+                    if (bm != null) {
+                        holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                        holder.ivSenderIcon.setImageBitmap(bm);
+                    }
+                }
             }
 
             // when item is clicked, show a menu with several options

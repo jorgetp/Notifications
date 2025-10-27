@@ -32,12 +32,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.SettingsActivity;
+import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.NotificationDao;
+import com.jorgetp.notifications.dao.StoredNotification;
 
-import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.Executors;
 
 public class SettingsAdapter extends NotificationsAdapter {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
@@ -101,6 +104,12 @@ public class SettingsAdapter extends NotificationsAdapter {
 
         items.add(context.getString(R.string.silenced_apps));
         items.addAll(apps);
+    }
+
+    // Helper method to convert byte array back to Bitmap
+    private Bitmap byteArrayToBitmap(byte[] bytes) {
+        if (bytes == null || bytes.length == 0) return null;
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
     }
 
     public TreeSet<String> getEditedItems() {
@@ -235,16 +244,29 @@ public class SettingsAdapter extends NotificationsAdapter {
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            // sender icon
+            // sender icon - load from database instead of filesystem
             holder.ivSenderIcon.setVisibility(View.GONE);
-            try (FileInputStream fis = context
-                    .openFileInput("notification_icon_" + sender.uuid + ".png")) {
-                Bitmap iconBitmap = BitmapFactory.decodeStream(fis);
-                holder.ivSenderIcon.setImageBitmap(iconBitmap);
-                holder.ivSenderIcon.setVisibility(View.VISIBLE);
-            } catch (Exception e) {
-                // Log.e("NotificationsAdapter", "Icon not found", e);
-            }
+
+            // Load icon from database using the stored UUID
+            Executors.newSingleThreadExecutor().execute(() -> {
+                try {
+                    NotificationDao dao = DbProvider.get(context).notificationDao();
+                    StoredNotification notification = dao.getByUuid(sender.uuid);
+
+                    if (notification != null && notification.largeIcon != null && notification.largeIcon.length > 0) {
+                        Bitmap iconBitmap = byteArrayToBitmap(notification.largeIcon);
+                        if (iconBitmap != null) {
+                            // Update UI on main thread
+                            ((SettingsActivity) context).runOnUiThread(() -> {
+                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                            });
+                        }
+                    }
+                } catch (Exception e) {
+                    // Log.e("SettingsAdapter", "Error loading icon from database", e);
+                }
+            });
 
             holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(context)
                     .setMessage(R.string.unset_as_important_confirmation)

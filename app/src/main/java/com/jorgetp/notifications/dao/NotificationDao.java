@@ -26,4 +26,8 @@ public interface NotificationDao {
 
     @Query("SELECT DISTINCT packageName FROM notifications")
     List<String> getPackages();
+
+    // Add method to get notification with icon by UUID
+    @Query("SELECT * FROM notifications WHERE uuid = :uuid")
+    StoredNotification getByUuid(String uuid);
 }
