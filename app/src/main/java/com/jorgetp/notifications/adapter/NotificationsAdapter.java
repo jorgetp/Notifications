@@ -37,6 +37,22 @@ import java.util.Date;
 import java.util.Locale;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
+    private static final String[] CATEGORIES_FOR_SENDER_ICON = {
+            Notification.CATEGORY_MESSAGE,
+            Notification.CATEGORY_EMAIL,
+            //Notification.CATEGORY_SOCIAL,
+            //Notification.CATEGORY_CALL,
+            //Notification.CATEGORY_MISSED_CALL
+    };
+    private static final String[] PACKAGES_FOR_SENDER_ICON = {
+            //"com.whatsapp",
+            //"com.telegram.messenger",
+            //"com.facebook.orca",
+            //"com.google.android.gm",
+            //"ch.viseca.visecaone",
+            //"com.revolut.revolut"
+
+    };
     protected final Context context;
     protected ArrayList<Object> items;
 
@@ -87,6 +103,17 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     private Bitmap byteArrayToBitmap(byte[] bytes) {
         if (bytes == null || bytes.length == 0) return null;
         return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+    }
+
+    // Helper method to check if array contains a value
+    private boolean arrayContains(String[] array, String value) {
+        if (array == null || value == null) return false;
+        for (String item : array) {
+            if (value.equals(item)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void setItems(ArrayList<Object> items) {
@@ -158,9 +185,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.itemView.setBackgroundResource(getBackground(i));
 
-            // Limit tvTitle width to 162dp
+            // Limit tvTitle width to 176dp
             holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 162,
+                    TypedValue.COMPLEX_UNIT_DIP, 176,
                     holder.itemView.getResources().getDisplayMetrics()));
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
@@ -202,15 +229,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     holder.ivSenderIcon.setVisibility(View.VISIBLE);
                 }
             } else {
-                // Fallback: show sender icon for selected categories
+                // Fallback: show sender icon for selected categories or apps
                 String category = notification.category;
-                if (Notification.CATEGORY_MESSAGE.equals(category)
-                    /*
-                     * || Notification.CATEGORY_EMAIL.equals(category)
-                     * || Notification.CATEGORY_SOCIAL.equals(category)
-                     * || Notification.CATEGORY_CALL.equals(category)
-                     * || Notification.CATEGORY_MISSED_CALL.equals(category)
-                     */) {
+                if (arrayContains(CATEGORIES_FOR_SENDER_ICON, category)
+                        || arrayContains(PACKAGES_FOR_SENDER_ICON, packageName)) {
                     Bitmap bm = createIconBitmap(packageName, title);
                     if (bm != null) {
                         holder.ivSenderIcon.setVisibility(View.VISIBLE);
