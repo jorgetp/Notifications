@@ -206,27 +206,84 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
                 // add a popup menu with the app names as filters
+                class AppPack {
+                    final String packageName;
+                    final CharSequence displayName;
+                    final Drawable icon;
+
+                    public AppPack(String packageName, CharSequence displayName, Drawable icon) {
+                        this.packageName = packageName;
+                        this.displayName = displayName;
+                        this.icon = icon;
+                    }
+
+                    public String getPackageName() {
+                        return packageName;
+                    }
+
+                    public CharSequence getDisplayName() {
+                        return displayName;
+                    }
+
+                    public Drawable getIcon() {
+                        return icon;
+                    }
+                }
                 List<String> packages = notificationDao.getPackages();
-                ArrayList<Pair<String, String>> apps = new ArrayList<>(packages.size());
+                ArrayList<AppPack> appPacks = new ArrayList<>(packages.size());
+
                 for (String packageName : packages) {
                     Pair<CharSequence, Drawable> appInfo = getAppInfo(MainActivity.this, packageName);
-                    apps.add(new Pair<>(packageName, appInfo.first.toString()));
+                    appPacks.add(new AppPack(packageName, appInfo.first, appInfo.second));
                 }
-                apps.sort(Comparator.comparing(o -> o.second.toLowerCase()));
-                apps.add(0, new Pair<>("all", getString(R.string.all)));
+                appPacks.sort(Comparator.comparing(o -> o.getDisplayName().toString().toLowerCase()));
 
-                PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
-                for (int i = 0; i < apps.size(); i++)
-                    popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, apps.get(i).second);
+                // Add "All" option at the beginning
+                appPacks.add(0, new AppPack(
+                        "all",
+                        getString(R.string.all),
+                        getDrawable(R.drawable.outline_apps_24)));
 
-                popup.setOnMenuItemClickListener(menuItem -> {
-                    int position = menuItem.getItemId() - 54321;
-                    selectedPackage = apps.get(position).first;
-                    getNotificationsAndRefreshUI();
-                    return true;
+                runOnUiThread(() -> {
+                    PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
+
+                    for (int i = 0; i < appPacks.size(); i++) {
+                        MenuItem menuItem = popup.getMenu().add(
+                                Menu.NONE,
+                                54321 + i,
+                                Menu.NONE,
+                                appPacks.get(i).getDisplayName());
+
+                        // Set icon for each menu item
+                        Drawable icon = appPacks.get(i).getIcon();
+                        if (icon == null)
+                            icon = getDrawable(android.R.drawable.sym_def_app_icon);
+
+                        // Resize icon to appropriate size
+                        icon.setBounds(0, 0, 64, 64); // 32dp in pixels approximately
+                        menuItem.setIcon(icon);
+                    }
+
+                    // Force show icons in popup menu
+                    try {
+                        java.lang.reflect.Field field = popup.getClass().getDeclaredField("mPopup");
+                        field.setAccessible(true);
+                        Object menuPopupHelper = field.get(popup);
+                        Class<?> classPopupHelper = Class.forName(menuPopupHelper.getClass().getName());
+                        java.lang.reflect.Method setForceIcons = classPopupHelper.getMethod("setForceShowIcon", boolean.class);
+                        setForceIcons.invoke(menuPopupHelper, true);
+                    } catch (Exception e) {
+                        // Ignore reflection errors - icons just won't show
+                    }
+
+                    popup.setOnMenuItemClickListener(menuItem -> {
+                        int position = menuItem.getItemId() - 54321;
+                        selectedPackage = appPacks.get(position).getPackageName();
+                        getNotificationsAndRefreshUI();
+                        return true;
+                    });
+                    popup.show();
                 });
-
-                runOnUiThread(() -> popup.show());
             });
             return true;
 

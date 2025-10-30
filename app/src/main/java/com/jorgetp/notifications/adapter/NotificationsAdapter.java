@@ -216,7 +216,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // sender icon - load from separate icons table
             holder.ivSenderIcon.setVisibility(View.GONE);
 
-            // Load icon from notification_icons table
+            // Load icon from icons table
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
                     IconDao iconsTable = DbProvider.get(context).notificationIconDao();
