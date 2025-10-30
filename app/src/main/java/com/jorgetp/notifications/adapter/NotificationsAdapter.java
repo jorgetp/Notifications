@@ -180,9 +180,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.itemView.setBackgroundResource(getBackground(i));
 
-            // Limit tvTitle width to 176dp
+            // Limit tvTitle width
             holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 176,
+                    TypedValue.COMPLEX_UNIT_DIP, 170,
                     holder.itemView.getResources().getDisplayMetrics()));
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
@@ -207,16 +207,14 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
             holder.tvText.setText(text);
 
-            // app icon
+            // App icon
             if (appInfo.second != null)
                 holder.ivAppIcon.setImageDrawable(appInfo.second);
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            // sender icon - load from separate icons table
+            // Load icon from separate icons table
             holder.ivSenderIcon.setVisibility(View.GONE);
-
-            // Load icon from icons table
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
                     IconDao iconsTable = DbProvider.get(context).notificationIconDao();

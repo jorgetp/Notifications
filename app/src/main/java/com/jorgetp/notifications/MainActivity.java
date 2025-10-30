@@ -199,9 +199,6 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-        SharedPreferences importantSendersPrefs = getPrefs(this,
-                IMPORTANT_SENDERS_PREFS);
-
         int itemId = item.getItemId();
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
