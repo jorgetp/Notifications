@@ -77,7 +77,7 @@ public class SettingsAdapter extends NotificationsAdapter {
         items.add(context.getString(R.string.general));
         items.add(new Switch(context.getString(R.string.nsl_enabled), ((SettingsActivity) context).isNotificationServiceEnabled()));
 
-        // important senders
+        // Important senders
         ArrayList<ImportantSender> senders = new ArrayList<>(10);
         SharedPreferences prefs2 = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
         for (Map.Entry<String, ?> entry : prefs2.getAll().entrySet()) {
@@ -91,7 +91,7 @@ public class SettingsAdapter extends NotificationsAdapter {
         items.add(context.getString(R.string.important_senders));
         items.addAll(senders);
 
-        // silenced apps
+        // Silenced apps
         ArrayList<SilencedApp> apps = new ArrayList<>(10);
         SharedPreferences prefs1 = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
         for (Map.Entry<String, ?> entry : prefs1.getAll().entrySet()) {

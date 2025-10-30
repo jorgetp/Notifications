@@ -202,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
         int itemId = item.getItemId();
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
-                // add a popup menu with the app names as filters
+                // Add a popup menu with the app names as filters
                 class AppPack {
                     final String packageName;
                     final CharSequence displayName;
