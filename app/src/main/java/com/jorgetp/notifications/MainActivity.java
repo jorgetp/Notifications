@@ -31,10 +31,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.jorgetp.notifications.adapter.NotificationsAdapter;
 import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredNotification;
 
-import java.io.File;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -43,10 +43,8 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Comparator;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -60,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ExecutorService executor;
     private long lastPauseTimestamp = Long.MAX_VALUE;
-    private NotificationDao dao;
+    private NotificationDao notificationDao;
 
     private NotificationsAdapter notificationsAdapter;
     private String selectedPackage = "all";
@@ -120,6 +118,22 @@ public class MainActivity extends AppCompatActivity {
         return givenDate.equals(yesterday);
     }
 
+    // Helper method to clean up orphaned icons
+    private void cleanupOrphanedIcons() {
+        IconDao iconDao = DbProvider.get(getApplicationContext()).notificationIconDao();
+        SharedPreferences importantSendersPrefs = getPrefs(this, IMPORTANT_SENDERS_PREFS);
+
+        // Get all important sender keys
+        List<String> importantSenderKeys = new ArrayList<>(importantSendersPrefs.getAll().keySet());
+
+        // If no important senders exist, delete all icons
+        if (importantSenderKeys.isEmpty()) {
+            iconDao.deleteAll();
+        } else {
+            // Delete icons that don't match any important sender
+            iconDao.deleteOrphanedIcons(importantSenderKeys);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -140,8 +154,8 @@ public class MainActivity extends AppCompatActivity {
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
         rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
 
-        dao = DbProvider.get(getApplicationContext()).notificationDao();
-        dao.observeLast().observe(this, last -> {
+        notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
+        notificationDao.observeLast().observe(this, last -> {
             if (last != null && (selectedPackage.equals("all") || selectedPackage.equals(last.packageName)))
                 getNotificationsAndRefreshUI();
         });
@@ -192,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
         if (itemId == R.id.menu_filter) {
             Executors.newSingleThreadExecutor().execute(() -> {
                 // add a popup menu with the app names as filters
-                List<String> packages = dao.getPackages();
+                List<String> packages = notificationDao.getPackages();
                 ArrayList<Pair<String, String>> apps = new ArrayList<>(packages.size());
                 for (String packageName : packages) {
                     Pair<CharSequence, Drawable> appInfo = getAppInfo(MainActivity.this, packageName);
@@ -201,47 +215,29 @@ public class MainActivity extends AppCompatActivity {
                 apps.sort(Comparator.comparing(o -> o.second.toLowerCase()));
                 apps.add(0, new Pair<>("all", getString(R.string.all)));
 
-                runOnUiThread(() -> {
-                    PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
-                    for (int i = 0; i < apps.size(); i++)
-                        popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, apps.get(i).second);
+                PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
+                for (int i = 0; i < apps.size(); i++)
+                    popup.getMenu().add(Menu.NONE, 54321 + i, Menu.NONE, apps.get(i).second);
 
-                    popup.setOnMenuItemClickListener(menuItem -> {
-                        int position = menuItem.getItemId() - 54321;
-                        selectedPackage = apps.get(position).first;
-                        getNotificationsAndRefreshUI();
-                        return true;
-                    });
-                    popup.show();
+                popup.setOnMenuItemClickListener(menuItem -> {
+                    int position = menuItem.getItemId() - 54321;
+                    selectedPackage = apps.get(position).first;
+                    getNotificationsAndRefreshUI();
+                    return true;
                 });
+
+                runOnUiThread(() -> popup.show());
             });
             return true;
 
-        } else if (itemId == R.id.menu_clear_all_except_today) {
+        } else if (itemId == R.id.menu_delete_all) {
             new AlertDialog.Builder(this)
-                    .setMessage(R.string.menu_delete_all)
+                    .setMessage(R.string.menu_delete_all_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         Executors.newSingleThreadExecutor().execute(() -> {
-                            dao.deleteAll();
+                            notificationDao.deleteAll();
+                            cleanupOrphanedIcons();
                             getNotificationsAndRefreshUI();
-
-                            // delete icons whose UUID is not linked to an important sender
-                            HashSet<String> activeUUIDs = new HashSet<>(10);
-                            for (Object uuid : importantSendersPrefs.getAll().values())
-                                activeUUIDs.add(uuid.toString());
-
-                            // delete files
-                            for (File file : Objects.requireNonNull(getFilesDir().listFiles())) {
-                                String fileName = file.getName();
-                                if (!fileName.startsWith("notification_icon_"))
-                                    continue;
-
-                                String uuid = fileName.substring("notification_icon_".length(), fileName.length() - 4);
-                                if (!activeUUIDs.contains(uuid)) {
-                                    if (file.delete())
-                                        Log.d("MainActivity", "Icon deleted: " + fileName);
-                                }
-                            }
                         });
                     })
                     .setNegativeButton(android.R.string.cancel, null)
@@ -260,7 +256,7 @@ public class MainActivity extends AppCompatActivity {
     public void getNotificationsAndRefreshUI() {
         executor.submit(() -> {
             int limit = 50;
-            List<StoredNotification> notifications = dao.getByPackage(
+            List<StoredNotification> notifications = notificationDao.getByPackage(
                     "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
 
             ArrayList<Object> items = new ArrayList<>(limit);

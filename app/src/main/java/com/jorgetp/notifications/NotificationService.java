@@ -24,7 +24,9 @@ import android.util.Log;
 import android.util.Pair;
 
 import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.NotificationDao;
+import com.jorgetp.notifications.dao.StoredIcon;
 import com.jorgetp.notifications.dao.StoredNotification;
 
 import java.io.ByteArrayOutputStream;
@@ -101,15 +103,14 @@ public class NotificationService extends NotificationListenerService {
 
         final byte[] largeIconBytes = largeIconBytesNotFinal;
 
-        // Create StoredNotification with icon data
+        // Create StoredNotification (without icon data)
         StoredNotification sn = new StoredNotification(
                 sbn.getPostTime(),
                 UUID.randomUUID().toString(),
                 sbn.getPackageName(),
                 title != null ? title : "",
                 text != null ? text.toString() : "",
-                notification.category,
-                largeIconBytes // Include icon bytes
+                notification.category
         );
 
         if (isSilenced)
@@ -117,18 +118,29 @@ public class NotificationService extends NotificationListenerService {
 
         // Asynchronously continue processing
         Executors.newSingleThreadExecutor().execute(() -> {
-            NotificationDao dao = DbProvider.get(getApplicationContext()).notificationDao();
+            NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
+            IconDao iconDao = DbProvider.get(getApplicationContext()).notificationIconDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
-            boolean postNotification = isSilenced && dao.getByKey(sn.key) == null;
+            boolean postNotification = isSilenced && notificationDao.getByKey(sn.key) == null;
 
             // Save notification
-            dao.insert(sn);
+            notificationDao.insert(sn);
 
-            // Update important sender icon if applicable
-            if (largeIconBytes != null) {
+            // Save large icon if present
+            if (largeIconBytes != null && title != null) {
+                StoredIcon icon = new StoredIcon(
+                        sbn.getPackageName(),
+                        title,
+                        largeIconBytes,
+                        System.currentTimeMillis()
+                );
+                iconDao.insertOrUpdate(icon);
+
+                // Update important sender if applicable
                 String key = sbn.getPackageName() + "/" + title;
-                if (importantSenders.contains(key))
+                if (importantSenders.contains(key)) {
                     importantSenders.edit().putString(key, sn.uuid).apply();
+                }
             }
 
             // Post silenced notification
@@ -165,22 +177,6 @@ public class NotificationService extends NotificationListenerService {
         // 2. Must be user-clearable
         if (!sbn.isClearable())
             return false;
-        /*// 3. Must NOT be an ongoing event
-        if (sbn.isOngoing())
-            return false;
-        // 4. Must NOT be a system/background category
-        String category = sbn.getNotification().category;
-        if (category != null) {
-            switch (category) {
-                case Notification.CATEGORY_CALL:
-                case Notification.CATEGORY_ALARM:
-                case Notification.CATEGORY_PROGRESS:
-                case Notification.CATEGORY_TRANSPORT:
-                case Notification.CATEGORY_SERVICE:
-                case Notification.CATEGORY_NAVIGATION:
-                    return false;
-            }
-        }*/
         return true;
     }
 

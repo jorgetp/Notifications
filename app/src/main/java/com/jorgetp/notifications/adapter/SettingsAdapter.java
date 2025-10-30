@@ -33,8 +33,8 @@ import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.SettingsActivity;
 import com.jorgetp.notifications.dao.DbProvider;
-import com.jorgetp.notifications.dao.NotificationDao;
-import com.jorgetp.notifications.dao.StoredNotification;
+import com.jorgetp.notifications.dao.IconDao;
+import com.jorgetp.notifications.dao.StoredIcon;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -82,9 +82,9 @@ public class SettingsAdapter extends NotificationsAdapter {
         SharedPreferences prefs2 = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
         for (Map.Entry<String, ?> entry : prefs2.getAll().entrySet()) {
             String key = entry.getKey();
-            String value = entry.getValue().toString();
+            // String value = entry.getValue().toString();
             String[] parts = key.split("/", 2);
-            senders.add(new ImportantSender(parts[0], parts[1], value));
+            senders.add(new ImportantSender(parts[0], parts[1]));
         }
         senders.sort(Comparator.comparing(sender -> sender.sender.toLowerCase()));
 
@@ -244,17 +244,17 @@ public class SettingsAdapter extends NotificationsAdapter {
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            // sender icon - load from database instead of filesystem
+            // sender icon - load from notification_icons table
             holder.ivSenderIcon.setVisibility(View.GONE);
 
-            // Load icon from database using the stored UUID
+            // Load icon from notification_icons table
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
-                    NotificationDao dao = DbProvider.get(context).notificationDao();
-                    StoredNotification notification = dao.getByUuid(sender.uuid);
+                    IconDao iconDao = DbProvider.get(context).notificationIconDao();
+                    StoredIcon icon = iconDao.getIcon(sender.packageName, sender.sender);
 
-                    if (notification != null && notification.largeIcon != null && notification.largeIcon.length > 0) {
-                        Bitmap iconBitmap = byteArrayToBitmap(notification.largeIcon);
+                    if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
+                        Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
                         if (iconBitmap != null) {
                             // Update UI on main thread
                             ((SettingsActivity) context).runOnUiThread(() -> {
@@ -309,12 +309,10 @@ public class SettingsAdapter extends NotificationsAdapter {
     private static class ImportantSender {
         private final String packageName;
         private final String sender;
-        private final String uuid;
 
-        public ImportantSender(String packageName, String sender, String uuid) {
+        public ImportantSender(String packageName, String sender) {
             this.packageName = packageName;
             this.sender = sender;
-            this.uuid = uuid;
         }
     }
 

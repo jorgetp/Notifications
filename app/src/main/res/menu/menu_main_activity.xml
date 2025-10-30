@@ -8,9 +8,9 @@
             android:title="@string/all"
             app:showAsAction="always" />
     </group>
-    <group android:id="@+id/group_clear">
+    <group android:id="@+id/group_delete">
         <item
-            android:id="@+id/menu_clear_all_except_today"
+            android:id="@+id/menu_delete_all"
             android:icon="@drawable/outline_delete_24"
             android:title="@string/menu_delete_all" />
     </group>

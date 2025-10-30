@@ -29,29 +29,24 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
+import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.IconDao;
+import com.jorgetp.notifications.dao.StoredIcon;
 import com.jorgetp.notifications.dao.StoredNotification;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.Executors;
 
 public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private static final String[] CATEGORIES_FOR_SENDER_ICON = {
             Notification.CATEGORY_MESSAGE,
-            Notification.CATEGORY_EMAIL,
-            //Notification.CATEGORY_SOCIAL,
-            //Notification.CATEGORY_CALL,
-            //Notification.CATEGORY_MISSED_CALL
+            //Notification.CATEGORY_EMAIL,
     };
     private static final String[] PACKAGES_FOR_SENDER_ICON = {
-            //"com.whatsapp",
-            //"com.telegram.messenger",
-            //"com.facebook.orca",
-            //"com.google.android.gm",
-            //"ch.viseca.visecaone",
-            //"com.revolut.revolut"
-
+            // Add package names here if needed
     };
     protected final Context context;
     protected ArrayList<Object> items;
@@ -218,28 +213,42 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            // sender icon
+            // sender icon - load from separate icons table
             holder.ivSenderIcon.setVisibility(View.GONE);
 
-            // First try to load large icon from database
-            if (notification.largeIcon != null && notification.largeIcon.length > 0) {
-                Bitmap iconBitmap = byteArrayToBitmap(notification.largeIcon);
-                if (iconBitmap != null) {
-                    holder.ivSenderIcon.setImageBitmap(iconBitmap);
-                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                }
-            } else {
-                // Fallback: show sender icon for selected categories or apps
-                String category = notification.category;
-                if (arrayContains(CATEGORIES_FOR_SENDER_ICON, category)
-                        || arrayContains(PACKAGES_FOR_SENDER_ICON, packageName)) {
-                    Bitmap bm = createIconBitmap(packageName, title);
-                    if (bm != null) {
-                        holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                        holder.ivSenderIcon.setImageBitmap(bm);
+            // Load icon from notification_icons table
+            Executors.newSingleThreadExecutor().execute(() -> {
+                try {
+                    IconDao iconsTable = DbProvider.get(context).notificationIconDao();
+                    StoredIcon icon = iconsTable.getIcon(packageName, title);
+
+                    if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
+                        Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
+                        if (iconBitmap != null) {
+                            // Update UI on main thread
+                            ((MainActivity) context).runOnUiThread(() -> {
+                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                            });
+                        }
+                    } else {
+                        // Fallback: show sender icon for selected categories or apps
+                        String category = notification.category;
+                        if (arrayContains(CATEGORIES_FOR_SENDER_ICON, category)
+                                || arrayContains(PACKAGES_FOR_SENDER_ICON, packageName)) {
+                            Bitmap bm = createIconBitmap(packageName, title);
+                            if (bm != null) {
+                                ((MainActivity) context).runOnUiThread(() -> {
+                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                                    holder.ivSenderIcon.setImageBitmap(bm);
+                                });
+                            }
+                        }
                     }
+                } catch (Exception e) {
+                    // Log.e("NotificationsAdapter", "Error loading icon", e);
                 }
-            }
+            });
 
             // when item is clicked, show a menu with several options
             holder.itemView.setOnClickListener(v -> {

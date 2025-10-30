@@ -10,10 +10,11 @@ public class DbProvider {
     public static AppDatabase get(Context context) {
         if (INSTANCE == null) {
             INSTANCE = Room.databaseBuilder(
-                    context.getApplicationContext(),
-                    AppDatabase.class,
-                    "notification_store.db"
-            ).build();
+                            context.getApplicationContext(),
+                            AppDatabase.class,
+                            "notification_store.db"
+                    )
+                    .build();
         }
         return INSTANCE;
     }
