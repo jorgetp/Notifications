@@ -4,6 +4,7 @@ import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
+import static com.jorgetp.notifications.MainActivity.getAppInfo;
 
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -159,6 +160,7 @@ public class SettingsAdapter extends NotificationsAdapter {
             SwitchViewHolder holder = (SwitchViewHolder) holderGeneric;
             holder.switch1.setText(((Switch) getItem(i)).title);
             holder.switch1.setChecked(((Switch) getItem(i)).checked);
+            holder.ivIcon.setImageDrawable(getAppInfo(context, context.getPackageName()).second);
 
             holder.itemView.setBackgroundResource(getBackground(i));
 

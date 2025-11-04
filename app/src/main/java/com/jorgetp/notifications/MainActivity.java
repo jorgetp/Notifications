@@ -241,13 +241,15 @@ public class MainActivity extends AppCompatActivity {
                         getString(R.string.all),
                         getDrawable(R.drawable.outline_apps_24)));
 
+                final int idOffset = 504321;
+
                 runOnUiThread(() -> {
                     PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
 
                     for (int i = 0; i < appPacks.size(); i++) {
                         MenuItem menuItem = popup.getMenu().add(
                                 Menu.NONE,
-                                54321 + i,
+                                idOffset + i,
                                 Menu.NONE,
                                 appPacks.get(i).getDisplayName());
 
@@ -274,7 +276,7 @@ public class MainActivity extends AppCompatActivity {
                     }
 
                     popup.setOnMenuItemClickListener(menuItem -> {
-                        int position = menuItem.getItemId() - 54321;
+                        int position = menuItem.getItemId() - idOffset;
                         selectedPackage = appPacks.get(position).getPackageName();
                         getNotificationsAndRefreshUI();
                         return true;
