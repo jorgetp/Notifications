@@ -55,37 +55,44 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         this.context = context;
     }
 
+
     public static Bitmap createIconBitmap(String packageName, String sender) {
         try {
             int lastIndex = sender.lastIndexOf(":");
             String actualSender = (lastIndex == -1 || lastIndex == sender.length() - 1) ? sender
                     : sender.substring(lastIndex + 1).strip();
 
-            // continue only if first char is a letter
+            // Create more homogeneous light colors
+            int hash = (/*packageName +*/ actualSender).hashCode();
+
+            // Use HSV color space for better color distribution
+            float hue = (Math.abs(hash) % 360); // 0-359 degrees
+            float saturation = 0.3f + (Math.abs(hash >> 8) % 40) / 100.0f; // 0.3-0.7 (soft colors)
+            float value = 0.85f + (Math.abs(hash >> 16) % 15) / 100.0f; // 0.85-1.0 (light colors)
+
+            int color = android.graphics.Color.HSVToColor(new float[]{hue, saturation, value});
+
+            Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
+            android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
+            android.graphics.Paint paint = new android.graphics.Paint();
+            paint.setAntiAlias(true); // Smooth edges
+            paint.setColor(color);
+            paint.setStyle(android.graphics.Paint.Style.FILL);
+            canvas.drawCircle(50, 50, 50, paint);
+
+            // Text color - use dark color for better contrast on light backgrounds
+            paint.setColor(0xFF333333); // Dark gray instead of pure black
+            paint.setTextSize(60);
+            paint.setTextAlign(android.graphics.Paint.Align.CENTER);
+            //paint.setTypeface(android.graphics.Typeface.DEFAULT_BOLD); // Bold for better readability
+
+            // Write first letter in circle
             if (Character.isLetter(actualSender.charAt(0))) {
-                // create colored circle
-                int hash = (packageName + actualSender).hashCode();
-                int r = (hash >> 16) & 0xFF;
-                int g = (hash >> 8) & 0xFF;
-                int b = hash & 0xFF;
-                int color = 0xFF000000 | (r << 16) | (g << 8) | b;
-
-                Bitmap bitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888);
-                android.graphics.Canvas canvas = new android.graphics.Canvas(bitmap);
-                android.graphics.Paint paint = new android.graphics.Paint();
-                paint.setColor(color);
-                paint.setStyle(android.graphics.Paint.Style.FILL);
-                canvas.drawCircle(50, 50, 50, paint);
-                paint.setColor(0xFF000000);
-                paint.setTextSize(60);
-                paint.setTextAlign(android.graphics.Paint.Align.CENTER);
-
-                // write first letter in circle
                 String firstLetter = actualSender.substring(0, 1).toUpperCase();
                 canvas.drawText(firstLetter, 50, 70, paint);
-
-                return bitmap;
             }
+
+            return bitmap;
 
         } catch (Exception e) {
             Log.e("MainActivity", "Error creating icon bitmap", e);
@@ -237,8 +244,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                             Bitmap bm = createIconBitmap(packageName, title);
                             if (bm != null) {
                                 ((MainActivity) context).runOnUiThread(() -> {
-                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
                                     holder.ivSenderIcon.setImageBitmap(bm);
+                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
                                 });
                             }
                         }

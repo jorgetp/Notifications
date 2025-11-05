@@ -65,9 +65,9 @@ public class SettingsAdapter extends NotificationsAdapter {
                                 NotificationManager.IMPORTANCE_HIGH);
                         notificationManager.createNotificationChannel(channel);
 
-                        Toast.makeText(context, R.string.nsl_enabled, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(context, R.string.nsl, Toast.LENGTH_SHORT).show();
                     }
-                    items.set(1, new Switch(context.getString(R.string.nsl_enabled), enabled));
+                    items.set(1, new Switch(context.getString(R.string.nsl), enabled));
                     notifyItemChanged(1);
 
                 });
@@ -76,7 +76,7 @@ public class SettingsAdapter extends NotificationsAdapter {
 
         // General settings
         items.add(context.getString(R.string.general));
-        items.add(new Switch(context.getString(R.string.nsl_enabled), ((SettingsActivity) context).isNotificationServiceEnabled()));
+        items.add(new Switch(context.getString(R.string.nsl), ((SettingsActivity) context).isNotificationServiceEnabled()));
 
         // Important senders
         ArrayList<ImportantSender> senders = new ArrayList<>(10);
@@ -261,6 +261,15 @@ public class SettingsAdapter extends NotificationsAdapter {
                             // Update UI on main thread
                             ((SettingsActivity) context).runOnUiThread(() -> {
                                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                            });
+                        }
+                    } else {
+                        // Fallback: build icon from sender icon
+                        Bitmap bm = createIconBitmap(sender.packageName, sender.sender);
+                        if (bm != null) {
+                            ((SettingsActivity) context).runOnUiThread(() -> {
+                                holder.ivSenderIcon.setImageBitmap(bm);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             });
                         }
