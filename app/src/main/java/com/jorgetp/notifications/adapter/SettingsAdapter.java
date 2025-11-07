@@ -250,6 +250,7 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.ivSenderIcon.setVisibility(View.GONE);
 
             // Load icon from notification_icons table
+            holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
                     IconDao iconDao = DbProvider.get(context).notificationIconDao();

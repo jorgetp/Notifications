@@ -349,4 +349,70 @@ public class MainActivity extends AppCompatActivity {
         }
         return "";
     }
+
+        /*private static boolean similarNotifications(StoredNotification n1, StoredNotification n2) {
+        // return true if n1 and n2 have same package and sender AND are within 3 minutes
+        if (n1 == null || n2 == null)
+            return false;
+        if (n1.packageName == null || n2.packageName == null || !n1.packageName.equals(n2.packageName))
+            return false;
+        if (n1.title == null || n2.title == null)
+            return false;
+
+        // Check if notifications are within 3 minutes (3 * 60 * 1000 = 180000 milliseconds)
+        long timeDiff = Math.abs(n1.postTime - n2.postTime);
+        if (timeDiff > 180000) // 3 minutes in milliseconds
+            return false;
+
+        // Trim any existing "(#x)" prefixes before comparing
+        String t1 = n1.title.trim().replaceAll("^\\s*\\(\\d+x\\)\\s*", "");
+        String t2 = n2.title.trim().replaceAll("^\\s*\\(\\d+x\\)\\s*", "");
+
+        return t1.equalsIgnoreCase(t2);
+    }
+
+    public void getNotificationsAndRefreshUI() {
+        executor.submit(() -> {
+            int limit = 50;
+            List<StoredNotification> notifications = notificationDao.getByPackage(
+                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
+
+            ArrayList<Object> items = new ArrayList<>(limit);
+            int lastGroupCount = 1;
+            StoredNotification prevNotification = null;
+
+            for (StoredNotification notification : notifications) {
+                boolean addHeader = true;
+                Date currentDate = toDate(notification.postTime);
+                Date previousDate = prevNotification == null ? null : toDate(prevNotification.postTime);
+                if (previousDate != null)
+                    addHeader = !isSameDay(previousDate, currentDate);
+                if (addHeader)
+                    items.add(dateToHeader(currentDate));
+
+                // Clean the title first (remove any existing count prefixes)
+                notification.title = notification.title.trim().replaceAll("^\\s*\\(\\d+x\\)\\s*", "");
+
+                if (similarNotifications(notification, prevNotification)) {
+                    // Remove the previous notification from items
+                    items.remove(items.size() - 1);
+                    lastGroupCount++;
+
+                    // Update the PREVIOUS notification's title with the count
+                    prevNotification.title = prevNotification.title.trim().replaceAll("^\\s*\\(\\d+x\\)\\s*", "");
+                    prevNotification.title = "(" + lastGroupCount + "x) " + prevNotification.title;
+
+                    // Add the previous notification back with updated count
+                    items.add(prevNotification);
+                } else {
+                    lastGroupCount = 1;
+                    items.add(notification);
+                    prevNotification = notification;
+                }
+            }
+
+            notificationsAdapter.setItems(items);
+            runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
+        });
+    }*/
 }
