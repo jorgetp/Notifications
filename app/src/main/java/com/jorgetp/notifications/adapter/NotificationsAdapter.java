@@ -37,6 +37,8 @@ import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredIcon;
 import com.jorgetp.notifications.dao.StoredNotification;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -191,8 +193,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.itemView.setBackgroundResource(getBackground(i));
 
             // Limit tvTitle width
+            int maxWidth = 170;
+            if (notification.pinned)
+                maxWidth = 130;
             holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, 170,
+                    TypedValue.COMPLEX_UNIT_DIP, maxWidth,
                     holder.itemView.getResources().getDisplayMetrics()));
 
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(activity, SILENCED_APPS_PREFS);
@@ -208,6 +213,9 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             Date date = MainActivity.toDate(postTime);
             if (date != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
+                if (notification.pinned) {
+                    sdf = new SimpleDateFormat("d MMM, h:mm a", Locale.getDefault());
+                }
                 holder.tvTime.setText(sdf.format(date));
             }
 
@@ -260,13 +268,20 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             // when item is clicked, show a menu with several options
             holder.itemView.setOnClickListener(v -> {
-                PopupMenu popup = new PopupMenu(activity, v);
+                /*PopupMenu popup = new PopupMenu(activity, v);
                 popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
                 MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
+
+                if (popup.getMenu() instanceof MenuBuilder) {
+                    MenuBuilder m = (MenuBuilder) popup.getMenu();
+                    m.setOptionalIconsVisible(true);
+                }*/
+                PopupMenu popup = createPopupMenu(v);
+
                 popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
                 popup.getMenu().findItem(R.id.set_as_important).setEnabled(!isImportant);
-                popup.getMenu().findItem(R.id.pin).setTitle(notification.pinned ?
-                        R.string.unpin : R.string.pin);
+                popup.getMenu().findItem(R.id.pin).setVisible(!notification.pinned);
+                popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
@@ -301,7 +316,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                                 .show();
                         return true;
 
-                    } else if (itemId == R.id.pin) {
+                    } else if (itemId == R.id.pin || itemId == R.id.unpin) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
                             StoredNotification sn = notificationDao.get(notification.uuid);
@@ -336,6 +351,28 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 popup.show();
             });
         }
+    }
+
+    protected PopupMenu createPopupMenu(View anchor) {
+        PopupMenu popup = new PopupMenu(activity, anchor);
+        popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
+
+        // Force icons to show using reflection
+        try {
+            Field mPopup = PopupMenu.class.getDeclaredField("mPopup");
+            mPopup.setAccessible(true);
+            Object menuPopupHelper = mPopup.get(popup);
+            Class<?> classPopupHelper = Class.forName(menuPopupHelper.getClass().getName());
+            Method setForceIcons = classPopupHelper.getMethod("setForceShowIcon", boolean.class);
+            setForceIcons.invoke(menuPopupHelper, true);
+            MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
+
+        } catch (Exception e) {
+            Log.e("NotificationsAdapter", "Error showing popup menu", e);
+            // e.printStackTrace();
+        }
+
+        return popup;
     }
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {

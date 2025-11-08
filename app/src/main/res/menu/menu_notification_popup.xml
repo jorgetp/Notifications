@@ -3,21 +3,37 @@
     <group android:id="@+id/group1">
         <item
             android:id="@+id/copy_title"
+            android:icon="@drawable/outline_content_copy_24"
             android:title="@string/copy_title" />
         <item
             android:id="@+id/copy_text"
+            android:icon="@drawable/outline_content_copy_24"
             android:title="@string/copy_text" />
-        <item android:id="@+id/pin" />
-        <item
-            android:id="@+id/delete"
-            android:title="@string/delete" />
     </group>
+
     <group android:id="@+id/group2">
         <item
+            android:id="@+id/pin"
+            android:icon="@drawable/outline_keyboard_double_arrow_up_24"
+            android:title="@string/pin" />
+        <item
+            android:id="@+id/unpin"
+            android:icon="@drawable/outline_keyboard_double_arrow_down_24"
+            android:title="@string/unpin" />
+        <item
+            android:id="@+id/delete"
+            android:icon="@drawable/outline_delete_24"
+            android:title="@string/delete" />
+    </group>
+
+    <group android:id="@+id/group4">
+        <item
             android:id="@+id/silence_app"
+            android:icon="@drawable/outline_notifications_off_24"
             android:title="@string/silence_app" />
         <item
             android:id="@+id/set_as_important"
+            android:icon="@drawable/outline_favorite_24"
             android:title="@string/set_as_important" />
     </group>
 </menu>
