@@ -195,7 +195,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // Limit tvTitle width
             int maxWidth = 170;
             if (notification.pinned)
-                maxWidth = 130;
+                maxWidth = 150;
             holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
                     TypedValue.COMPLEX_UNIT_DIP, maxWidth,
                     holder.itemView.getResources().getDisplayMetrics()));
@@ -320,11 +320,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         Executors.newSingleThreadExecutor().execute(() -> {
                             NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
                             StoredNotification sn = notificationDao.get(notification.uuid);
-                            if (sn.pinned)
-                                notificationDao.unpinNotification(notification.uuid);
-                            else
-                                notificationDao.pinNotification(notification.uuid);
-
+                            notificationDao.setPinned(notification.uuid, !sn.pinned);
                             activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                         });
                         return true;

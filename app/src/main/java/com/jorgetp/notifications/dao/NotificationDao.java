@@ -33,11 +33,8 @@ public interface NotificationDao {
     @Query("SELECT DISTINCT packageName FROM notifications")
     List<String> getPackages();
 
-    @Query("UPDATE notifications SET pinned = 1 WHERE uuid = :uuid")
-    void pinNotification(String uuid);
-
-    @Query("UPDATE notifications SET pinned = 0 WHERE uuid = :uuid")
-    void unpinNotification(String uuid);
+    @Query("UPDATE notifications SET pinned = :pinned WHERE uuid = :uuid")
+    void setPinned(String uuid, boolean pinned);
 
     @Query("SELECT * FROM notifications WHERE pinned = 1 ORDER BY postTime DESC")
     List<StoredNotification> getPinned();
