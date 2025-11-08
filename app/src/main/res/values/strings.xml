@@ -27,4 +27,8 @@
     <string name="no_title">(No sender)</string>
     <string name="general">General</string>
     <string name="delete">Delete</string>
+    <string name="delete_confirmation">Are you sure you want to delete this notification?</string>
+    <string name="pinned">Pinned</string>
+    <string name="pin">Pin</string>
+    <string name="unpin">Unpin</string>
 </resources>

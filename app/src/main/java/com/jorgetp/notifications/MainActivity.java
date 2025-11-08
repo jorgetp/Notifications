@@ -315,7 +315,16 @@ public class MainActivity extends AppCompatActivity {
             List<StoredNotification> notifications = notificationDao.getByPackage(
                     "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
 
-            ArrayList<Object> items = new ArrayList<>(limit);
+            ArrayList<Object> items = new ArrayList<>(limit + 10);
+            if ("all".equals(selectedPackage)) {
+                // add pinned first
+                List<StoredNotification> pinned = notificationDao.getPinned();
+                if (!pinned.isEmpty()) {
+                    items.add(getString(R.string.pinned));
+                    items.addAll(pinned);
+                }
+            }
+
             Date previousDate = null;
             for (StoredNotification notification : notifications) {
                 boolean addHeader = true;

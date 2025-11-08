@@ -121,7 +121,7 @@ public class NotificationService extends NotificationListenerService {
             NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
             IconDao iconDao = DbProvider.get(getApplicationContext()).notificationIconDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
-            boolean postNotification = isSilenced && notificationDao.getByKey(sn.key) == null;
+            boolean postNotification = isSilenced && notificationDao.getByDedupeKey(sn.dedupeKey) == null;
 
             // Save notification
             notificationDao.insert(sn);
@@ -149,7 +149,7 @@ public class NotificationService extends NotificationListenerService {
                 postSilencedNotification(sn, smallIcon, largeIconBitmap);
             }
 
-            Log.d("NotificationService", "Notification processed: " + sn.key);
+            Log.d("NotificationService", "Notification processed: " + sn.uuid);
         });
     }
 

@@ -26,4 +26,10 @@
     <string name="silenced_notification">%s (silenciada)</string>
     <string name="no_title">(Sin remitente)</string>
     <string name="general">General</string>
+    <string name="delete">Eliminar</string>
+    <string name="delete_confirmation">¿Estás seguro de que deseas eliminar esta notificación?</string>
+    <string name="pinned">Fijadas</string>
+    <string name="pin">Fijar</string>
+    <string name="unpin">Desfijar</string>
+
 </resources>

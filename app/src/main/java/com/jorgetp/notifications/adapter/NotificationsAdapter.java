@@ -25,6 +25,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.MenuCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -264,6 +265,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
                 popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
                 popup.getMenu().findItem(R.id.set_as_important).setEnabled(!isImportant);
+                popup.getMenu().findItem(R.id.pin).setTitle(notification.pinned ?
+                        R.string.unpin : R.string.pin);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
@@ -284,12 +287,30 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         return true;
 
                     } else if (itemId == R.id.delete) {
+                        new AlertDialog.Builder(activity)
+                                .setMessage(R.string.delete_confirmation)
+                                .setPositiveButton(android.R.string.yes, (dialog, id) -> {
+                                    Executors.newSingleThreadExecutor().execute(() -> {
+                                        NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
+                                        notificationDao.delete(notification.uuid);
+                                        activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
+                                    });
+                                })
+                                .setNegativeButton(android.R.string.cancel, null)
+                                .create()
+                                .show();
+                        return true;
+
+                    } else if (itemId == R.id.pin) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
-                            notificationDao.deleteByUUID(notification.uuid);
-                            activity.runOnUiThread(() -> {
-                                ((MainActivity) activity).getNotificationsAndRefreshUI();
-                            });
+                            StoredNotification sn = notificationDao.get(notification.uuid);
+                            if (sn.pinned)
+                                notificationDao.unpinNotification(notification.uuid);
+                            else
+                                notificationDao.pinNotification(notification.uuid);
+
+                            activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                         });
                         return true;
 
