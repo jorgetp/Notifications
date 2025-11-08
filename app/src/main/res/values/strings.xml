@@ -26,4 +26,5 @@
     <string name="silenced_notification">%s (silenced)</string>
     <string name="no_title">(No sender)</string>
     <string name="general">General</string>
+    <string name="delete">Delete</string>
 </resources>

@@ -6,6 +6,7 @@ import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 import static com.jorgetp.notifications.MainActivity.getAppInfo;
 
+import android.app.Activity;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -50,24 +51,24 @@ public class SettingsAdapter extends NotificationsAdapter {
 
     private final ActivityResultLauncher<Intent> nslSettingsLauncher;
 
-    public SettingsAdapter(Context context) {
-        super(context);
+    public SettingsAdapter(Activity activity) {
+        super(activity);
 
-        nslSettingsLauncher = ((SettingsActivity) context).registerForActivityResult(
+        nslSettingsLauncher = ((SettingsActivity) activity).registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(), result -> {
-                    boolean enabled = ((SettingsActivity) context).isNotificationServiceEnabled();
+                    boolean enabled = ((SettingsActivity) activity).isNotificationServiceEnabled();
                     if (enabled && !((Switch) items.get(1)).checked) {
-                        NotificationManager notificationManager = (NotificationManager) context.getSystemService(
+                        NotificationManager notificationManager = (NotificationManager) activity.getSystemService(
                                 Context.NOTIFICATION_SERVICE);
                         NotificationChannel channel = new NotificationChannel(
                                 CHANNEL_ID,
-                                context.getString(R.string.app_name),
+                                activity.getString(R.string.app_name),
                                 NotificationManager.IMPORTANCE_HIGH);
                         notificationManager.createNotificationChannel(channel);
 
-                        Toast.makeText(context, R.string.nsl, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, R.string.nsl, Toast.LENGTH_SHORT).show();
                     }
-                    items.set(1, new Switch(context.getString(R.string.nsl), enabled));
+                    items.set(1, new Switch(activity.getString(R.string.nsl), enabled));
                     notifyItemChanged(1);
 
                 });
@@ -75,12 +76,12 @@ public class SettingsAdapter extends NotificationsAdapter {
         items = new ArrayList<>(10);
 
         // General settings
-        items.add(context.getString(R.string.general));
-        items.add(new Switch(context.getString(R.string.nsl), ((SettingsActivity) context).isNotificationServiceEnabled()));
+        items.add(activity.getString(R.string.general));
+        items.add(new Switch(activity.getString(R.string.nsl), ((SettingsActivity) activity).isNotificationServiceEnabled()));
 
         // Important senders
         ArrayList<ImportantSender> senders = new ArrayList<>(10);
-        SharedPreferences prefs2 = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
+        SharedPreferences prefs2 = MainActivity.getPrefs(activity, IMPORTANT_SENDERS_PREFS);
         for (Map.Entry<String, ?> entry : prefs2.getAll().entrySet()) {
             String key = entry.getKey();
             // String value = entry.getValue().toString();
@@ -89,21 +90,21 @@ public class SettingsAdapter extends NotificationsAdapter {
         }
         senders.sort(Comparator.comparing(sender -> sender.sender.toLowerCase()));
 
-        items.add(context.getString(R.string.important_senders));
+        items.add(activity.getString(R.string.important_senders));
         items.addAll(senders);
 
         // Silenced apps
         ArrayList<SilencedApp> apps = new ArrayList<>(10);
-        SharedPreferences prefs1 = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
+        SharedPreferences prefs1 = MainActivity.getPrefs(activity, SILENCED_APPS_PREFS);
         for (Map.Entry<String, ?> entry : prefs1.getAll().entrySet()) {
             String packageName = entry.getKey();
             Integer silencedWhen = (Integer) entry.getValue();
             apps.add(new SilencedApp(packageName, silencedWhen));
         }
         apps.sort(Comparator
-                .comparing(app -> MainActivity.getAppInfo(context, app.packageName).first.toString().toLowerCase()));
+                .comparing(app -> MainActivity.getAppInfo(activity, app.packageName).first.toString().toLowerCase()));
 
-        items.add(context.getString(R.string.silenced_apps));
+        items.add(activity.getString(R.string.silenced_apps));
         items.addAll(apps);
     }
 
@@ -121,16 +122,16 @@ public class SettingsAdapter extends NotificationsAdapter {
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         if (viewType == 0) {
-            View view = LayoutInflater.from(context).inflate(R.layout.header, parent, false);
+            View view = LayoutInflater.from(activity).inflate(R.layout.header, parent, false);
             return new NotificationsAdapter.HeaderViewHolder(view);
         } else if (viewType == 1) {
-            View view = LayoutInflater.from(context).inflate(R.layout.item, parent, false);
+            View view = LayoutInflater.from(activity).inflate(R.layout.item, parent, false);
             return new SilencedAppViewHolder(view);
         } else if (viewType == 2) {
-            View view = LayoutInflater.from(context).inflate(R.layout.item, parent, false);
+            View view = LayoutInflater.from(activity).inflate(R.layout.item, parent, false);
             return new ImportantSenderViewHolder(view);
         } else /* if (viewType == 3) */ {
-            View view = LayoutInflater.from(context).inflate(R.layout.item_switch, parent, false);
+            View view = LayoutInflater.from(activity).inflate(R.layout.item_switch, parent, false);
             return new SwitchViewHolder(view);
         }
     }
@@ -160,7 +161,7 @@ public class SettingsAdapter extends NotificationsAdapter {
             SwitchViewHolder holder = (SwitchViewHolder) holderGeneric;
             holder.switch1.setText(((Switch) getItem(i)).title);
             holder.switch1.setChecked(((Switch) getItem(i)).checked);
-            holder.ivIcon.setImageDrawable(getAppInfo(context, context.getPackageName()).second);
+            holder.ivIcon.setImageDrawable(getAppInfo(activity, activity.getPackageName()).second);
 
             holder.itemView.setBackgroundResource(getBackground(i));
 
@@ -180,20 +181,20 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.itemView.setBackgroundResource(getBackground(i));
 
             // load app name and icon
-            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, app.packageName);
+            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, app.packageName);
             holder.tvApp.setText(appInfo.first);
             if (appInfo.second != null)
                 holder.ivIcon.setImageDrawable(appInfo.second);
             else
                 holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            holder.tvSilencedWhen.setText(app.silencedWhen == ALWAYS ? context.getString(R.string.silenced_always)
-                    : context.getString(R.string.silenced_non_business));
+            holder.tvSilencedWhen.setText(app.silencedWhen == ALWAYS ? activity.getString(R.string.silenced_always)
+                    : activity.getString(R.string.silenced_non_business));
 
             holder.itemView.setOnClickListener(v -> {
-                PopupMenu popup = new PopupMenu(context, v);
+                PopupMenu popup = new PopupMenu(activity, v);
                 popup.getMenuInflater().inflate(R.menu.menu_app_popup, popup.getMenu());
-                SharedPreferences prefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
+                SharedPreferences prefs = MainActivity.getPrefs(activity, SILENCED_APPS_PREFS);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
@@ -237,8 +238,8 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.itemView.setBackgroundResource(getBackground(i));
 
             // load app name and icon
-            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, sender.packageName);
-            holder.tvSender.setText(!sender.sender.isEmpty() ? sender.sender : context.getString(R.string.no_title));
+            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, sender.packageName);
+            holder.tvSender.setText(!sender.sender.isEmpty() ? sender.sender : activity.getString(R.string.no_title));
 
             // app icon
             if (appInfo.second != null)
@@ -253,14 +254,14 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
-                    IconDao iconDao = DbProvider.get(context).notificationIconDao();
+                    IconDao iconDao = DbProvider.get(activity).notificationIconDao();
                     StoredIcon icon = iconDao.getIcon(sender.packageName, sender.sender);
 
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
                         if (iconBitmap != null) {
                             // Update UI on main thread
-                            ((SettingsActivity) context).runOnUiThread(() -> {
+                            ((SettingsActivity) activity).runOnUiThread(() -> {
                                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             });
@@ -269,7 +270,7 @@ public class SettingsAdapter extends NotificationsAdapter {
                         // Fallback: build icon from sender icon
                         Bitmap bm = createIconBitmap(sender.packageName, sender.sender);
                         if (bm != null) {
-                            ((SettingsActivity) context).runOnUiThread(() -> {
+                            ((SettingsActivity) activity).runOnUiThread(() -> {
                                 holder.ivSenderIcon.setImageBitmap(bm);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             });
@@ -280,12 +281,12 @@ public class SettingsAdapter extends NotificationsAdapter {
                 }
             });
 
-            holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(context)
+            holder.itemView.setOnClickListener(v -> new AlertDialog.Builder(activity)
                     .setMessage(R.string.unset_as_important_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         int position = holder.getBindingAdapterPosition();
                         editedItems.add(sender.packageName + "/" + sender.sender);
-                        MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS)
+                        MainActivity.getPrefs(activity, IMPORTANT_SENDERS_PREFS)
                                 .edit()
                                 .remove(sender.packageName + "/" + sender.sender)
                                 .apply();

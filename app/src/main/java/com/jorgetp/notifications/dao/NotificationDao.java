@@ -18,6 +18,9 @@ public interface NotificationDao {
     @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName ORDER BY postTime DESC LIMIT :limit")
     List<StoredNotification> getByPackage(String packageName, int limit);
 
+    @Query("DELETE FROM notifications WHERE `uuid` = :uuid")
+    void deleteByUUID(String uuid);
+
     @Query("DELETE FROM notifications")
     void deleteAll();
 

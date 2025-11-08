@@ -4,6 +4,7 @@ import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
+import android.app.Activity;
 import android.app.Notification;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -31,6 +32,7 @@ import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.dao.DbProvider;
 import com.jorgetp.notifications.dao.IconDao;
+import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredIcon;
 import com.jorgetp.notifications.dao.StoredNotification;
 
@@ -48,11 +50,11 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     private static final String[] PACKAGES_FOR_SENDER_ICON = {
             // Add package names here if needed
     };
-    protected final Context context;
+    protected final Activity activity;
     protected ArrayList<Object> items;
 
-    public NotificationsAdapter(Context context) {
-        this.context = context;
+    public NotificationsAdapter(Activity activity) {
+        this.activity = activity;
     }
 
 
@@ -192,8 +194,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     TypedValue.COMPLEX_UNIT_DIP, 170,
                     holder.itemView.getResources().getDisplayMetrics()));
 
-            SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(context, SILENCED_APPS_PREFS);
-            SharedPreferences importantSendersPrefs = MainActivity.getPrefs(context, IMPORTANT_SENDERS_PREFS);
+            SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(activity, SILENCED_APPS_PREFS);
+            SharedPreferences importantSendersPrefs = MainActivity.getPrefs(activity, IMPORTANT_SENDERS_PREFS);
 
             String packageName = notification.packageName;
             String title = notification.title;
@@ -208,10 +210,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 holder.tvTime.setText(sdf.format(date));
             }
 
-            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(context, packageName);
+            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, packageName);
             int position = holder.getBindingAdapterPosition();
 
-            holder.tvTitle.setText(!title.isEmpty() ? title : context.getString(R.string.no_title));
+            holder.tvTitle.setText(!title.isEmpty() ? title : activity.getString(R.string.no_title));
             holder.tvText.setText(text);
 
             // App icon
@@ -224,14 +226,14 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
-                    IconDao iconsTable = DbProvider.get(context).notificationIconDao();
+                    IconDao iconsTable = DbProvider.get(activity).notificationIconDao();
                     StoredIcon icon = iconsTable.getIcon(packageName, title);
 
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
                         if (iconBitmap != null) {
                             // Update UI on main thread
-                            ((MainActivity) context).runOnUiThread(() -> {
+                            activity.runOnUiThread(() -> {
                                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             });
@@ -243,7 +245,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                                 || arrayContains(PACKAGES_FOR_SENDER_ICON, packageName)) {
                             Bitmap bm = createIconBitmap(packageName, title);
                             if (bm != null) {
-                                ((MainActivity) context).runOnUiThread(() -> {
+                                activity.runOnUiThread(() -> {
                                     holder.ivSenderIcon.setImageBitmap(bm);
                                     holder.ivSenderIcon.setVisibility(View.VISIBLE);
                                 });
@@ -257,7 +259,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             // when item is clicked, show a menu with several options
             holder.itemView.setOnClickListener(v -> {
-                PopupMenu popup = new PopupMenu(context, v);
+                PopupMenu popup = new PopupMenu(activity, v);
                 popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
                 MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
                 popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
@@ -266,25 +268,35 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
                     if (itemId == R.id.copy_title) {
-                        ClipboardManager clipboard = (ClipboardManager) context
+                        ClipboardManager clipboard = (ClipboardManager) activity
                                 .getSystemService(Context.CLIPBOARD_SERVICE);
                         ClipData clip = ClipData.newPlainText("Notification title", title);
                         clipboard.setPrimaryClip(clip);
-                        Toast.makeText(context, R.string.copied_title, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, R.string.copied_title, Toast.LENGTH_SHORT).show();
                         return true;
 
                     } else if (itemId == R.id.copy_text) {
-                        ClipboardManager clipboard = (ClipboardManager) context
+                        ClipboardManager clipboard = (ClipboardManager) activity
                                 .getSystemService(Context.CLIPBOARD_SERVICE);
                         ClipData clip = ClipData.newPlainText("Notification text", text);
                         clipboard.setPrimaryClip(clip);
-                        Toast.makeText(context, R.string.copied_text, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(activity, R.string.copied_text, Toast.LENGTH_SHORT).show();
+                        return true;
+
+                    } else if (itemId == R.id.delete) {
+                        Executors.newSingleThreadExecutor().execute(() -> {
+                            NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
+                            notificationDao.deleteByUUID(notification.uuid);
+                            activity.runOnUiThread(() -> {
+                                ((MainActivity) activity).getNotificationsAndRefreshUI();
+                            });
+                        });
                         return true;
 
                     } else if (itemId == R.id.silence_app) {
                         silencedAppsPrefs.edit().putInt(packageName, ALWAYS).apply();
                         notifyItemChanged(position);
-                        Toast.makeText(context, context.getString(R.string.silenced_always),
+                        Toast.makeText(activity, activity.getString(R.string.silenced_always),
                                 Toast.LENGTH_SHORT).show();
                         return true;
 
@@ -292,7 +304,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         importantSendersPrefs.edit().putString(packageName + "/" + title,
                                 notification.uuid).apply();
                         notifyItemChanged(position);
-                        Toast.makeText(context, context.getString(R.string.set_as_important),
+                        Toast.makeText(activity, activity.getString(R.string.set_as_important),
                                 Toast.LENGTH_SHORT).show();
                         return true;
                     }
