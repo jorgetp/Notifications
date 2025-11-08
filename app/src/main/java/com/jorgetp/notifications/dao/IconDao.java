@@ -22,6 +22,9 @@ public interface IconDao {
     @Query("SELECT packageName || '/' || senderName FROM icons")
     List<String> getAllIconKeys();
 
+    @Query("SELECT * FROM icons")
+    List<StoredIcon> getAllIcons();
+
     // Delete icons that don't match any important sender keys
     @Query("DELETE FROM icons WHERE (packageName || '/' || senderName) NOT IN (:importantSenderKeys)")
     void deleteOrphanedIcons(List<String> importantSenderKeys);

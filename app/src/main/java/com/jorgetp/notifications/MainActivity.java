@@ -327,6 +327,9 @@ public class MainActivity extends AppCompatActivity {
 
             Date previousDate = null;
             for (StoredNotification notification : notifications) {
+                // if pinned and not filter, then skip as it's shown before
+                if ("all".equals(selectedPackage) && notification.pinned)
+                    continue;
                 boolean addHeader = true;
                 Date currentDate = toDate(notification.postTime);
                 if (previousDate != null)

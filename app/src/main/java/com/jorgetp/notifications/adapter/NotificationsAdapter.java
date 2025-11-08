@@ -60,7 +60,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         this.activity = activity;
     }
 
-
     public static Bitmap createIconBitmap(String packageName, String sender) {
         try {
             int lastIndex = sender.lastIndexOf(":");
@@ -235,8 +234,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
-                    IconDao iconsTable = DbProvider.get(activity).notificationIconDao();
-                    StoredIcon icon = iconsTable.getIcon(packageName, title);
+                    IconDao iconDao = DbProvider.get(activity).notificationIconDao();
+                    StoredIcon icon = iconDao.getIcon(packageName, title);
 
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
@@ -278,10 +277,13 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 }*/
                 PopupMenu popup = createPopupMenu(v);
 
-                popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
-                popup.getMenu().findItem(R.id.set_as_important).setEnabled(!isImportant);
+                //popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
+                popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilencedApp);
+                //popup.getMenu().findItem(R.id.set_as_important).setEnabled(!isImportant);
+                popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);
                 popup.getMenu().findItem(R.id.pin).setVisible(!notification.pinned);
                 popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
+                popup.getMenu().findItem(R.id.delete).setVisible(false);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
