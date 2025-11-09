@@ -18,8 +18,11 @@ public interface NotificationDao {
     @Query(value = "SELECT * FROM notifications WHERE dedupeKey = :dedupeKey")
     StoredNotification getByDedupeKey(String dedupeKey);
 
-    @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName ORDER BY postTime DESC LIMIT :limit")
-    List<StoredNotification> getByPackage(String packageName, int limit);
+    @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName AND pinned = 1 ORDER BY postTime DESC LIMIT :limit")
+    List<StoredNotification> getPinnedByPackage(String packageName, int limit);
+
+    @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName AND pinned = 0 ORDER BY postTime DESC LIMIT :limit")
+    List<StoredNotification> getUnpinnedByPackage(String packageName, int limit);
 
     @Query("DELETE FROM notifications WHERE uuid = :uuid")
     void delete(String uuid);

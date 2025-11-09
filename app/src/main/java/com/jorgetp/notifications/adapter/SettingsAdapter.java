@@ -34,6 +34,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.SettingsActivity;
+import com.jorgetp.notifications.dao.DbProvider;
+import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.StoredIcon;
 
 import java.util.TreeSet;
@@ -215,6 +217,7 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
+                    IconDao iconDao = DbProvider.get(activity).iconDao();
                     StoredIcon icon = iconDao.get(sender.packageName, sender.sender);
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);

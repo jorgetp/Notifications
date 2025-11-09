@@ -7,5 +7,5 @@ import androidx.room.RoomDatabase;
 public abstract class AppDatabase extends RoomDatabase {
     public abstract NotificationDao notificationDao();
 
-    public abstract IconDao notificationIconDao();
+    public abstract IconDao iconDao();
 }

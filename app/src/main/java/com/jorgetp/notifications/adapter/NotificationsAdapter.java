@@ -57,14 +57,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     protected final Activity activity;
     protected final HashMap<String, Bitmap> icons = new HashMap<>();
-    protected final IconDao iconDao;
     // Track pending icon loading tasks
     private final HashMap<String, Runnable> pendingIconTasks = new HashMap<>();
     protected ArrayList<Object> items;
 
     public NotificationsAdapter(Activity activity) {
         this.activity = activity;
-        iconDao = DbProvider.get(activity).notificationIconDao();
     }
 
     public static Bitmap createIconBitmap(String packageName, String sender) {
@@ -253,6 +251,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // Load icon from separate icons table with position validation
             Runnable iconTask = () -> {
                 try {
+                    IconDao iconDao = DbProvider.get(activity).iconDao();
                     StoredIcon icon = iconDao.get(packageName, title);
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);

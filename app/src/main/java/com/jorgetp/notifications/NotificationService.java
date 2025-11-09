@@ -119,7 +119,7 @@ public class NotificationService extends NotificationListenerService {
         // Asynchronously continue processing
         Executors.newSingleThreadExecutor().execute(() -> {
             NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
-            IconDao iconDao = DbProvider.get(getApplicationContext()).notificationIconDao();
+            IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
             boolean postNotification = isSilenced && notificationDao.getByDedupeKey(sn.dedupeKey) == null;
 

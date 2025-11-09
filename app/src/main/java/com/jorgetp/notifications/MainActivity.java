@@ -60,7 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao notificationDao;
 
-    private NotificationsAdapter notificationsAdapter;
+    private NotificationsAdapter adapter;
     private String selectedPackage = "all";
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(
@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Helper method to clean up orphaned icons
     private void cleanupOrphanedIcons() {
-        IconDao iconDao = DbProvider.get(getApplicationContext()).notificationIconDao();
+        IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
         SharedPreferences importantSendersPrefs = getPrefs(this, IMPORTANT_SENDERS_PREFS);
 
         // Get all important sender keys
@@ -152,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
 
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
         rvNotifications.setLayoutManager(new LinearLayoutManager(this));
-        rvNotifications.setAdapter(notificationsAdapter = new NotificationsAdapter(this));
+        rvNotifications.setAdapter(adapter = new NotificationsAdapter(this));
 
         notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
         notificationDao.observeLast().observe(this, last -> {
@@ -312,33 +312,35 @@ public class MainActivity extends AppCompatActivity {
     public void getNotificationsAndRefreshUI() {
         executor.submit(() -> {
             int limit = 50;
-            List<StoredNotification> notifications = notificationDao.getByPackage(
-                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
+            ArrayList<Object> items = new ArrayList<>(2 * limit);
 
-            ArrayList<Object> items = new ArrayList<>(limit + 10);
-            // add pinned first
-            List<StoredNotification> pinned = notificationDao.getPinned();
+            // pinned
+            List<StoredNotification> pinned = notificationDao.getPinnedByPackage(
+                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
             if (!pinned.isEmpty()) {
                 items.add(getString(R.string.pinned));
                 items.addAll(pinned);
             }
 
-            Date previousDate = null;
-            for (StoredNotification notification : notifications) {
-                if (notification.pinned)
-                    continue; // already added to pinned
-                boolean addHeader = true;
-                Date currentDate = toDate(notification.postTime);
-                if (previousDate != null)
-                    addHeader = !isSameDay(previousDate, currentDate);
-                if (addHeader)
-                    items.add(dateToHeader(currentDate));
-                items.add(notification);
-                previousDate = currentDate;
+            // unpinned
+            List<StoredNotification> unpinned = notificationDao.getUnpinnedByPackage(
+                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
+            if (!unpinned.isEmpty()) {
+                Date previousDate = null;
+                for (StoredNotification notification : unpinned) {
+                    boolean addHeader = true;
+                    Date currentDate = toDate(notification.postTime);
+                    if (previousDate != null)
+                        addHeader = !isSameDay(previousDate, currentDate);
+                    if (addHeader)
+                        items.add(dateToHeader(currentDate));
+                    items.add(notification);
+                    previousDate = currentDate;
+                }
             }
 
-            notificationsAdapter.setItems(items);
-            runOnUiThread(() -> notificationsAdapter.notifyDataSetChanged());
+            adapter.setItems(items);
+            runOnUiThread(() -> adapter.notifyDataSetChanged());
         });
     }
 
