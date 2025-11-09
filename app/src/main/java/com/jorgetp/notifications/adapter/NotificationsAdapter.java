@@ -54,9 +54,12 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     private static final String[] PACKAGES_FOR_SENDER_ICON = {
             // Add package names here if needed
     };
+
     protected final Activity activity;
     protected final HashMap<String, Bitmap> icons = new HashMap<>();
     protected final IconDao iconDao;
+    // Track pending icon loading tasks
+    private final HashMap<String, Runnable> pendingIconTasks = new HashMap<>();
     protected ArrayList<Object> items;
 
     public NotificationsAdapter(Activity activity) {
@@ -195,6 +198,19 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.itemView.setBackgroundResource(getBackground(i));
 
+            // Create a unique key for this ViewHolder position
+            String viewHolderKey = "vh_" + holder.hashCode() + "_" + i;
+
+            // Cancel any pending icon task for this ViewHolder
+            Runnable pendingTask = pendingIconTasks.remove(viewHolderKey);
+            if (pendingTask != null) {
+                // Task cancellation logic would go here if we had a way to cancel
+            }
+
+            // Reset sender icon immediately
+            holder.ivSenderIcon.setVisibility(View.GONE);
+            holder.ivSenderIcon.setImageBitmap(null);
+
             // Limit tvTitle width
             int maxWidth = 170;
             if (notification.pinned)
@@ -234,18 +250,22 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            // Load icon from separate icons table
-            holder.ivSenderIcon.setVisibility(View.GONE);
-            Executors.newSingleThreadExecutor().execute(() -> {
+            // Load icon from separate icons table with position validation
+            Runnable iconTask = () -> {
                 try {
                     StoredIcon icon = iconDao.get(packageName, title);
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
                         if (iconBitmap != null) {
-                            // Update UI on main thread
+                            // Validate position before updating UI
                             activity.runOnUiThread(() -> {
-                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
-                                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                                // Check if this ViewHolder is still bound to the same position
+                                if (holder.getBindingAdapterPosition() == i &&
+                                        i < getItemCount() &&
+                                        getItem(i) == notification) {
+                                    holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                                }
                             });
                         }
                     } else {
@@ -256,36 +276,38 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                             Bitmap bm = createIconBitmap(packageName, title);
                             if (bm != null) {
                                 activity.runOnUiThread(() -> {
-                                    holder.ivSenderIcon.setImageBitmap(bm);
-                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                                    // Check if this ViewHolder is still bound to the same position
+                                    if (holder.getBindingAdapterPosition() == i &&
+                                            i < getItemCount() &&
+                                            getItem(i) == notification) {
+                                        holder.ivSenderIcon.setImageBitmap(bm);
+                                        holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                                    }
                                 });
                             }
                         }
                     }
                 } catch (Exception e) {
                     // Log.e("NotificationsAdapter", "Error loading icon", e);
+                } finally {
+                    // Remove from pending tasks
+                    pendingIconTasks.remove(viewHolderKey);
                 }
-            });
+            };
+
+            // Store the task and execute it
+            pendingIconTasks.put(viewHolderKey, iconTask);
+            Executors.newSingleThreadExecutor().execute(iconTask);
 
             // when item is clicked, show a menu with several options
             holder.itemView.setOnClickListener(v -> {
-                /*PopupMenu popup = new PopupMenu(activity, v);
-                popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
-                MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
-
-                if (popup.getMenu() instanceof MenuBuilder) {
-                    MenuBuilder m = (MenuBuilder) popup.getMenu();
-                    m.setOptionalIconsVisible(true);
-                }*/
                 PopupMenu popup = createPopupMenu(v);
 
-                //popup.getMenu().findItem(R.id.silence_app).setEnabled(!isSilencedApp);
                 popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilencedApp);
-                //popup.getMenu().findItem(R.id.set_as_important).setEnabled(!isImportant);
                 popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);
                 popup.getMenu().findItem(R.id.pin).setVisible(!notification.pinned);
                 popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
-                popup.getMenu().findItem(R.id.delete).setVisible(false);
+                //popup.getMenu().findItem(R.id.delete).setVisible(false);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
@@ -323,8 +345,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     } else if (itemId == R.id.pin || itemId == R.id.unpin) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
-                            StoredNotification sn = notificationDao.get(notification.uuid);
-                            notificationDao.setPinned(notification.uuid, !sn.pinned);
+                            notificationDao.updatePinned(notification.uuid, !notification.pinned);
                             activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                         });
                         return true;

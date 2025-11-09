@@ -34,7 +34,7 @@ public interface NotificationDao {
     List<String> getPackages();
 
     @Query("UPDATE notifications SET pinned = :pinned WHERE uuid = :uuid")
-    void setPinned(String uuid, boolean pinned);
+    void updatePinned(String uuid, boolean pinned);
 
     @Query("SELECT * FROM notifications WHERE pinned = 1 ORDER BY postTime DESC")
     List<StoredNotification> getPinned();
