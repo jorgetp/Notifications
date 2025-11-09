@@ -42,6 +42,7 @@ import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.Executors;
 
@@ -54,10 +55,13 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // Add package names here if needed
     };
     protected final Activity activity;
+    protected final HashMap<String, Bitmap> icons = new HashMap<>();
+    protected final IconDao iconDao;
     protected ArrayList<Object> items;
 
     public NotificationsAdapter(Activity activity) {
         this.activity = activity;
+        iconDao = DbProvider.get(activity).notificationIconDao();
     }
 
     public static Bitmap createIconBitmap(String packageName, String sender) {
@@ -234,9 +238,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
-                    IconDao iconDao = DbProvider.get(activity).notificationIconDao();
-                    StoredIcon icon = iconDao.getIcon(packageName, title);
-
+                    StoredIcon icon = iconDao.get(packageName, title);
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
                         if (iconBitmap != null) {

@@ -13,17 +13,13 @@ public interface IconDao {
     void insertOrUpdate(StoredIcon icon);
 
     @Query("SELECT * FROM icons WHERE packageName = :packageName AND senderName = :senderName")
-    StoredIcon getIcon(String packageName, String senderName);
+    StoredIcon get(String packageName, String senderName);
 
     @Query("DELETE FROM icons")
     void deleteAll();
 
-    // Get all package/sender combinations that have icons
-    @Query("SELECT packageName || '/' || senderName FROM icons")
-    List<String> getAllIconKeys();
-
     @Query("SELECT * FROM icons")
-    List<StoredIcon> getAllIcons();
+    List<StoredIcon> getAll();
 
     // Delete icons that don't match any important sender keys
     @Query("DELETE FROM icons WHERE (packageName || '/' || senderName) NOT IN (:importantSenderKeys)")

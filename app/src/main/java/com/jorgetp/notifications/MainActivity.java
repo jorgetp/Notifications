@@ -316,20 +316,17 @@ public class MainActivity extends AppCompatActivity {
                     "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
 
             ArrayList<Object> items = new ArrayList<>(limit + 10);
-            if ("all".equals(selectedPackage)) {
-                // add pinned first
-                List<StoredNotification> pinned = notificationDao.getPinned();
-                if (!pinned.isEmpty()) {
-                    items.add(getString(R.string.pinned));
-                    items.addAll(pinned);
-                }
+            // add pinned first
+            List<StoredNotification> pinned = notificationDao.getPinned();
+            if (!pinned.isEmpty()) {
+                items.add(getString(R.string.pinned));
+                items.addAll(pinned);
             }
 
             Date previousDate = null;
             for (StoredNotification notification : notifications) {
-                // if pinned and not filter, then skip as it's shown before
-                if ("all".equals(selectedPackage) && notification.pinned)
-                    continue;
+                if (notification.pinned)
+                    continue; // already added to pinned
                 boolean addHeader = true;
                 Date currentDate = toDate(notification.postTime);
                 if (previousDate != null)

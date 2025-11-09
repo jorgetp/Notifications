@@ -34,13 +34,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.SettingsActivity;
-import com.jorgetp.notifications.dao.DbProvider;
-import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.StoredIcon;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
@@ -72,40 +67,6 @@ public class SettingsAdapter extends NotificationsAdapter {
                     notifyItemChanged(1);
 
                 });
-
-        items = new ArrayList<>(10);
-
-        // General settings
-        items.add(activity.getString(R.string.general));
-        items.add(new Switch(activity.getString(R.string.nsl), ((SettingsActivity) activity).isNotificationServiceEnabled()));
-
-        // Important senders
-        ArrayList<ImportantSender> senders = new ArrayList<>(10);
-        SharedPreferences prefs2 = MainActivity.getPrefs(activity, IMPORTANT_SENDERS_PREFS);
-        for (Map.Entry<String, ?> entry : prefs2.getAll().entrySet()) {
-            String key = entry.getKey();
-            // String value = entry.getValue().toString();
-            String[] parts = key.split("/", 2);
-            senders.add(new ImportantSender(parts[0], parts[1]));
-        }
-        senders.sort(Comparator.comparing(sender -> sender.sender.toLowerCase()));
-
-        items.add(activity.getString(R.string.important_senders));
-        items.addAll(senders);
-
-        // Silenced apps
-        ArrayList<SilencedApp> apps = new ArrayList<>(10);
-        SharedPreferences prefs1 = MainActivity.getPrefs(activity, SILENCED_APPS_PREFS);
-        for (Map.Entry<String, ?> entry : prefs1.getAll().entrySet()) {
-            String packageName = entry.getKey();
-            Integer silencedWhen = (Integer) entry.getValue();
-            apps.add(new SilencedApp(packageName, silencedWhen));
-        }
-        apps.sort(Comparator
-                .comparing(app -> MainActivity.getAppInfo(activity, app.packageName).first.toString().toLowerCase()));
-
-        items.add(activity.getString(R.string.silenced_apps));
-        items.addAll(apps);
     }
 
     // Helper method to convert byte array back to Bitmap
@@ -254,14 +215,12 @@ public class SettingsAdapter extends NotificationsAdapter {
             holder.ivSenderIcon.setVisibility(View.GONE);
             Executors.newSingleThreadExecutor().execute(() -> {
                 try {
-                    IconDao iconDao = DbProvider.get(activity).notificationIconDao();
-                    StoredIcon icon = iconDao.getIcon(sender.packageName, sender.sender);
-
+                    StoredIcon icon = iconDao.get(sender.packageName, sender.sender);
                     if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
                         Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
                         if (iconBitmap != null) {
                             // Update UI on main thread
-                            ((SettingsActivity) activity).runOnUiThread(() -> {
+                            activity.runOnUiThread(() -> {
                                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             });
@@ -270,7 +229,7 @@ public class SettingsAdapter extends NotificationsAdapter {
                         // Fallback: build icon from sender icon
                         Bitmap bm = createIconBitmap(sender.packageName, sender.sender);
                         if (bm != null) {
-                            ((SettingsActivity) activity).runOnUiThread(() -> {
+                            activity.runOnUiThread(() -> {
                                 holder.ivSenderIcon.setImageBitmap(bm);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             });
@@ -319,9 +278,9 @@ public class SettingsAdapter extends NotificationsAdapter {
         }
     }
 
-    private static class ImportantSender {
-        private final String packageName;
-        private final String sender;
+    public static class ImportantSender {
+        public final String packageName;
+        public final String sender;
 
         public ImportantSender(String packageName, String sender) {
             this.packageName = packageName;
@@ -346,8 +305,8 @@ public class SettingsAdapter extends NotificationsAdapter {
     }
 
     public static class SilencedApp {
-        private final String packageName;
-        private final int silencedWhen;
+        public final String packageName;
+        public final int silencedWhen;
 
         public SilencedApp(String packageName, int silencedWhen) {
             this.packageName = packageName;
