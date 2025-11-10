@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
 
@@ -12,8 +13,8 @@ public interface NotificationDao {
     @Insert
     void insert(StoredNotification notification);
 
-    @Query(value = "SELECT * FROM notifications WHERE uuid = :uuid")
-    StoredNotification get(String uuid);
+    @Update
+    void update(StoredNotification notification);
 
     @Query(value = "SELECT * FROM notifications WHERE dedupeKey = :dedupeKey")
     StoredNotification getByDedupeKey(String dedupeKey);

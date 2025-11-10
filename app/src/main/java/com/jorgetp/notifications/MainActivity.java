@@ -53,6 +53,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
+    public static final String SETTINGS_PREFS = "Notifications-Settings";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
 

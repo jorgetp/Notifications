@@ -31,4 +31,5 @@
     <string name="pinned">Pinned</string>
     <string name="pin">Pin</string>
     <string name="unpin">Unpin</string>
+    <string name="pin_important_senders">Pin important senders</string>
 </resources>

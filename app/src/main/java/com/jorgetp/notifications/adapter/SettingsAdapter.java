@@ -3,6 +3,7 @@ package com.jorgetp.notifications.adapter;
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
+import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 import static com.jorgetp.notifications.MainActivity.getAppInfo;
 
@@ -127,18 +128,29 @@ public class SettingsAdapter extends NotificationsAdapter {
             SwitchViewHolder holder = (SwitchViewHolder) holderGeneric;
             holder.switch1.setText(((Switch) getItem(i)).title);
             holder.switch1.setChecked(((Switch) getItem(i)).checked);
-            holder.ivIcon.setImageDrawable(getAppInfo(activity, activity.getPackageName()).second);
-
             holder.itemView.setBackgroundResource(getBackground(i));
 
-            holder.switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                if (buttonView.isPressed()) { // to avoid infinite loop when updating the switch state programmatically
-                    if (i == 1) { // NSL enabled/disabled
+            if (activity.getString(R.string.nsl).equals(((Switch) getItem(i)).title)) {
+                holder.ivIcon.setImageDrawable(getAppInfo(activity, activity.getPackageName()).second);
+
+                holder.switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (buttonView.isPressed()) { // to avoid infinite loop when updating the switch state programmatically
+                        //if (i == 1) { // NSL enabled/disabled
                         Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                         nslSettingsLauncher.launch(intent);
+                        //}
                     }
-                }
-            });
+                });
+            } else if (activity.getString(R.string.pin_important_senders).equals(((Switch) getItem(i)).title)) {
+                holder.ivIcon.setImageDrawable(activity.getDrawable(R.drawable.outline_keyboard_double_arrow_up_24));
+
+                holder.switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    if (buttonView.isPressed()) { // to avoid infinite loop when updating the switch state programmatically
+                        MainActivity.getPrefs(activity, SETTINGS_PREFS)
+                                .edit().putBoolean("pin_important_senders", isChecked).apply();
+                    }
+                });
+            }
 
         } else if (holderGeneric instanceof SilencedAppViewHolder) {
             SilencedAppViewHolder holder = (SilencedAppViewHolder) holderGeneric;
@@ -347,8 +359,8 @@ public class SettingsAdapter extends NotificationsAdapter {
     }
 
     public static class Switch {
-        private final String title;
-        private final boolean checked;
+        public final String title;
+        public final boolean checked;
 
         public Switch(String title, boolean checked) {
             this.title = title;

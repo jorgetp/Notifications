@@ -4,6 +4,7 @@ import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
+import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
@@ -121,10 +122,21 @@ public class NotificationService extends NotificationListenerService {
             NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
             IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
-            boolean postNotification = isSilenced && notificationDao.getByDedupeKey(sn.dedupeKey) == null;
+            SharedPreferences settingsPrefs = MainActivity.getPrefs(NotificationService.this, SETTINGS_PREFS);
+            StoredNotification sameNotification = notificationDao.getByDedupeKey(sn.dedupeKey);
+
+            // Set pinned
+            String importantSenderKey = sbn.getPackageName() + "/" + title;
+            sn.pinned = settingsPrefs.getBoolean("pin_important_senders", false) &&
+                    importantSenders.contains(importantSenderKey);
 
             // Save notification
-            notificationDao.insert(sn);
+            if (sameNotification == null)
+                notificationDao.insert(sn);
+            else {
+                sn.uuid = sameNotification.uuid;
+                notificationDao.update(sn);
+            }
 
             // Save large icon if present
             if (largeIconBytes != null && title != null) {
@@ -137,14 +149,12 @@ public class NotificationService extends NotificationListenerService {
                 iconDao.insertOrUpdate(icon);
 
                 // Update important sender if applicable
-                String key = sbn.getPackageName() + "/" + title;
-                if (importantSenders.contains(key)) {
-                    importantSenders.edit().putString(key, sn.uuid).apply();
-                }
+                if (importantSenders.contains(importantSenderKey))
+                    importantSenders.edit().putString(importantSenderKey, sn.uuid).apply();
             }
 
             // Post silenced notification
-            if (postNotification) {
+            if (sameNotification == null && isSilenced) {
                 Bitmap largeIconBitmap = largeIconBytes != null ? byteArrayToBitmap(largeIconBytes) : null;
                 postSilencedNotification(sn, smallIcon, largeIconBitmap);
             }
