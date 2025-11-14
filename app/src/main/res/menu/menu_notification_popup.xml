@@ -11,6 +11,17 @@
             android:title="@string/copy_text" />
     </group>
 
+    <group android:id="@+id/group4">
+        <item
+            android:id="@+id/silence_app"
+            android:icon="@drawable/outline_notifications_off_24"
+            android:title="@string/silence_app" />
+        <item
+            android:id="@+id/set_as_important"
+            android:icon="@drawable/outline_favorite_24"
+            android:title="@string/set_as_important" />
+    </group>
+
     <group android:id="@+id/group2">
         <item
             android:id="@+id/pin"
@@ -24,16 +35,5 @@
             android:id="@+id/delete"
             android:icon="@drawable/outline_delete_24"
             android:title="@string/delete" />
-    </group>
-
-    <group android:id="@+id/group4">
-        <item
-            android:id="@+id/silence_app"
-            android:icon="@drawable/outline_notifications_off_24"
-            android:title="@string/silence_app" />
-        <item
-            android:id="@+id/set_as_important"
-            android:icon="@drawable/outline_favorite_24"
-            android:title="@string/set_as_important" />
     </group>
 </menu>

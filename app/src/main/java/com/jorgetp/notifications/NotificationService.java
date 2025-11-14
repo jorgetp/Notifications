@@ -73,7 +73,7 @@ public class NotificationService extends NotificationListenerService {
         // Get icons
         Icon smallIcon = notification.getSmallIcon();
         Icon largeIcon = notification.getLargeIcon();
-        byte[] largeIconBytesNotFinal = null;
+        byte[] largeIconBytes = null;
 
         // Convert large icon to byte array
         if (largeIcon != null) {
@@ -95,14 +95,14 @@ public class NotificationService extends NotificationListenerService {
                     }
 
                     // Convert bitmap to byte array
-                    largeIconBytesNotFinal = bitmapToByteArray(bitmap);
+                    largeIconBytes = bitmapToByteArray(bitmap);
                 }
             } catch (Exception e) {
                 Log.e("NotificationService", "Error converting large icon to bitmap", e);
             }
         }
 
-        final byte[] largeIconBytes = largeIconBytesNotFinal;
+        final byte[] largeIconBytesFinal = largeIconBytes;
 
         // Create StoredNotification (without icon data)
         StoredNotification sn = new StoredNotification(
@@ -139,11 +139,11 @@ public class NotificationService extends NotificationListenerService {
             }
 
             // Save large icon if present
-            if (largeIconBytes != null && title != null) {
+            if (largeIconBytesFinal != null && title != null) {
                 StoredIcon icon = new StoredIcon(
                         sbn.getPackageName(),
                         title,
-                        largeIconBytes,
+                        largeIconBytesFinal,
                         System.currentTimeMillis()
                 );
                 iconDao.insertOrUpdate(icon);
@@ -155,7 +155,7 @@ public class NotificationService extends NotificationListenerService {
 
             // Post silenced notification
             if (sameNotification == null && isSilenced) {
-                Bitmap largeIconBitmap = largeIconBytes != null ? byteArrayToBitmap(largeIconBytes) : null;
+                Bitmap largeIconBitmap = largeIconBytesFinal != null ? byteArrayToBitmap(largeIconBytesFinal) : null;
                 postSilencedNotification(sn, smallIcon, largeIconBitmap);
             }
 

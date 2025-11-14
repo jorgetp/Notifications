@@ -126,7 +126,7 @@ public class SettingsAdapter extends NotificationsAdapter {
 
         } else if (holderGeneric instanceof SwitchViewHolder) {
             SwitchViewHolder holder = (SwitchViewHolder) holderGeneric;
-            holder.switch1.setText(((Switch) getItem(i)).title);
+            holder.tvTitle.setText(((Switch) getItem(i)).title);
             holder.switch1.setChecked(((Switch) getItem(i)).checked);
             holder.itemView.setBackgroundResource(getBackground(i));
 
@@ -369,11 +369,13 @@ public class SettingsAdapter extends NotificationsAdapter {
     }
 
     public static class SwitchViewHolder extends RecyclerView.ViewHolder {
+        TextView tvTitle;
         SwitchCompat switch1;
         ImageView ivIcon;
 
         public SwitchViewHolder(@NonNull View itemView) {
             super(itemView);
+            tvTitle = itemView.findViewById(R.id.tvTitle);
             switch1 = itemView.findViewById(R.id.switch1);
             ivIcon = itemView.findViewById(R.id.ivIcon);
         }
