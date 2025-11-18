@@ -98,7 +98,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // Write first letter in circle
             if (Character.isLetter(actualSender.charAt(0))) {
                 String firstLetter = actualSender.substring(0, 1).toUpperCase();
-                canvas.drawText(firstLetter, 50, 72, paint);
+                canvas.drawText(firstLetter, 50, 70, paint);
             }
 
             return bitmap;
@@ -251,41 +251,17 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // Load icon from separate icons table with position validation
             Runnable iconTask = () -> {
                 try {
-                    IconDao iconDao = DbProvider.get(activity).iconDao();
-                    StoredIcon icon = iconDao.get(packageName, title);
-                    if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
-                        Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
-                        if (iconBitmap != null) {
-                            // Validate position before updating UI
-                            activity.runOnUiThread(() -> {
-                                // Check if this ViewHolder is still bound to the same position
-                                if (holder.getBindingAdapterPosition() == i &&
-                                        i < getItemCount() &&
-                                        getItem(i) == notification) {
-                                    holder.ivSenderIcon.setImageBitmap(iconBitmap);
-                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                                }
-                            });
-                        }
-                    } else {
-                        // Fallback: show sender icon for selected categories or apps
-                        String category = notification.category;
-                        if (arrayContains(CATEGORIES_FOR_SENDER_ICON, category)
-                                || arrayContains(PACKAGES_FOR_SENDER_ICON, packageName)) {
-                            Bitmap bm = createIconBitmap(packageName, title);
-                            if (bm != null) {
-                                activity.runOnUiThread(() -> {
-                                    // Check if this ViewHolder is still bound to the same position
-                                    if (holder.getBindingAdapterPosition() == i &&
-                                            i < getItemCount() &&
-                                            getItem(i) == notification) {
-                                        holder.ivSenderIcon.setImageBitmap(bm);
-                                        holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                                    }
-                                });
+                    Bitmap iconBitmap = getSenderIcon(packageName, title, notification.category);
+                    if (iconBitmap != null)
+                        activity.runOnUiThread(() -> {
+                            // Check if this ViewHolder is still bound to the same position
+                            if (holder.getBindingAdapterPosition() == i &&
+                                    i < getItemCount() &&
+                                    getItem(i) == notification) {
+                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             }
-                        }
-                    }
+                        });
                 } catch (Exception e) {
                     // Log.e("NotificationsAdapter", "Error loading icon", e);
                 } finally {
@@ -394,6 +370,21 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         return popup;
+    }
+
+    protected Bitmap getSenderIcon(String packageName, String title, String category) {
+        IconDao iconDao = DbProvider.get(activity).iconDao();
+        StoredIcon icon = iconDao.get(packageName, title);
+        if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
+            return byteArrayToBitmap(icon.iconData);
+        } else {
+            // Fallback: show sender icon for selected categories or apps
+            if (arrayContains(CATEGORIES_FOR_SENDER_ICON, category)
+                    || arrayContains(PACKAGES_FOR_SENDER_ICON, packageName)) {
+                return createIconBitmap(packageName, title);
+            }
+        }
+        return null;
     }
 
     public static class ItemViewHolder extends RecyclerView.ViewHolder {

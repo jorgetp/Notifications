@@ -35,9 +35,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.jorgetp.notifications.MainActivity;
 import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.SettingsActivity;
-import com.jorgetp.notifications.dao.DbProvider;
-import com.jorgetp.notifications.dao.IconDao;
-import com.jorgetp.notifications.dao.StoredIcon;
 
 import java.util.HashMap;
 import java.util.TreeSet;
@@ -238,42 +235,22 @@ public class SettingsAdapter extends NotificationsAdapter {
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            // Load sender icon with position validation
+            // Load icon from separate icons table with position validation
             Runnable iconTask = () -> {
                 try {
-                    IconDao iconDao = DbProvider.get(activity).iconDao();
-                    StoredIcon icon = iconDao.get(sender.packageName, sender.sender);
-                    if (icon != null && icon.iconData != null && icon.iconData.length > 0) {
-                        Bitmap iconBitmap = byteArrayToBitmap(icon.iconData);
-                        if (iconBitmap != null) {
-                            // Validate position before updating UI
-                            activity.runOnUiThread(() -> {
-                                // Check if this ViewHolder is still bound to the same position
-                                if (holder.getBindingAdapterPosition() == i &&
-                                        i < getItemCount() &&
-                                        getItem(i) == sender) {
-                                    holder.ivSenderIcon.setImageBitmap(iconBitmap);
-                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                                }
-                            });
-                        }
-                    } else {
-                        // Fallback: build icon from sender name
-                        Bitmap bm = createIconBitmap(sender.packageName, sender.sender);
-                        if (bm != null) {
-                            activity.runOnUiThread(() -> {
-                                // Check if this ViewHolder is still bound to the same position
-                                if (holder.getBindingAdapterPosition() == i &&
-                                        i < getItemCount() &&
-                                        getItem(i) == sender) {
-                                    holder.ivSenderIcon.setImageBitmap(bm);
-                                    holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                                }
-                            });
-                        }
-                    }
+                    Bitmap iconBitmap = getSenderIcon(sender.packageName, sender.sender, null);
+                    if (iconBitmap != null)
+                        activity.runOnUiThread(() -> {
+                            // Check if this ViewHolder is still bound to the same position
+                            if (holder.getBindingAdapterPosition() == i &&
+                                    i < getItemCount() &&
+                                    getItem(i) == sender) {
+                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                            }
+                        });
                 } catch (Exception e) {
-                    // Log.e("SettingsAdapter", "Error loading icon from database", e);
+                    // Log.e("NotificationsAdapter", "Error loading icon", e);
                 } finally {
                     // Remove from pending tasks
                     settingsPendingIconTasks.remove(viewHolderKey);
