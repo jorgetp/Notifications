@@ -19,7 +19,7 @@ public class StoredNotification {
     public String category;
 
     @ColumnInfo(defaultValue = "0")
-    public boolean pinned = false;
+    public boolean pinned;
 
     public StoredNotification(long postTime, @NonNull String uuid, String packageName, String title, String text, String category) {
         this.postTime = postTime;
@@ -30,8 +30,8 @@ public class StoredNotification {
         this.category = category;
         this.pinned = false;
 
-        long postTimeBlock = postTime / 30000;
+        long postTimeBlock = postTime / 60000;
         String shortText = text.substring(0, Math.min(300, text.length()));
-        dedupeKey = postTimeBlock + "|" + packageName + "|" + title + "|" + shortText;
+        this.dedupeKey = postTimeBlock + "|" + packageName + "|" + title + "|" + shortText;
     }
 }

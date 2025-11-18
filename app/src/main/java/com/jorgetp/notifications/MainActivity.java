@@ -313,19 +313,18 @@ public class MainActivity extends AppCompatActivity {
     public void getNotificationsAndRefreshUI() {
         executor.submit(() -> {
             int limit = 50;
+            String packageFilter = "all".equals(selectedPackage) ? "%" : selectedPackage;
             ArrayList<Object> items = new ArrayList<>(2 * limit);
 
             // pinned
-            List<StoredNotification> pinned = notificationDao.getPinnedByPackage(
-                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
+            List<StoredNotification> pinned = notificationDao.getByPackageAndPinned(packageFilter, 1, limit);
             if (!pinned.isEmpty()) {
                 items.add(getString(R.string.pinned));
                 items.addAll(pinned);
             }
 
             // unpinned
-            List<StoredNotification> unpinned = notificationDao.getUnpinnedByPackage(
-                    "all".equals(selectedPackage) ? "%" : selectedPackage, limit);
+            List<StoredNotification> unpinned = notificationDao.getByPackageAndPinned(packageFilter, 0, limit);
             if (!unpinned.isEmpty()) {
                 Date previousDate = null;
                 for (StoredNotification notification : unpinned) {

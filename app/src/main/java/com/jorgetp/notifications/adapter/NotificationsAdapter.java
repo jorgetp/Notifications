@@ -98,7 +98,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             // Write first letter in circle
             if (Character.isLetter(actualSender.charAt(0))) {
                 String firstLetter = actualSender.substring(0, 1).toUpperCase();
-                canvas.drawText(firstLetter, 50, 70, paint);
+                canvas.drawText(firstLetter, 50, 72, paint);
             }
 
             return bitmap;
@@ -344,7 +344,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     } else if (itemId == R.id.pin || itemId == R.id.unpin) {
                         Executors.newSingleThreadExecutor().execute(() -> {
                             NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
-                            notificationDao.updatePinned(notification.uuid, !notification.pinned);
+                            notification.pinned = !notification.pinned;
+                            notificationDao.update(notification);
                             activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                         });
                         return true;
