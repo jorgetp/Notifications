@@ -34,7 +34,7 @@ public class StoredNotification {
 
         // Generate dedupeKey for memory cache (not stored in DB)
         long postTimeBlock = postTime / 60000;
-        String shortText = text.substring(0, Math.min(300, text.length()));
-        this.dedupeKey = postTimeBlock + "|" + packageName + "|" + title + "|" + shortText;
+        //String shortText = text.substring(0, Math.min(300, text.length()));
+        this.dedupeKey = postTimeBlock + "|" + packageName + "|" + title + "|" + /* shortText*/ text;
     }
 }

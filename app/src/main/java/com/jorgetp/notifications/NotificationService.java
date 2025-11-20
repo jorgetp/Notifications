@@ -66,9 +66,7 @@ public class NotificationService extends NotificationListenerService {
 
     private void processNotification(StatusBarNotification sbn, boolean isSilenced) {
         Notification notification = sbn.getNotification();
-        if (notification == null)
-            return;
-        if ((notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0)
+        if (notification == null || (notification.flags & Notification.FLAG_GROUP_SUMMARY) != 0)
             return;
 
         Bundle extras = notification.extras;
@@ -267,16 +265,16 @@ public class NotificationService extends NotificationListenerService {
                 .setShowWhen(true)
                 .setWhen(notification.postTime);
 
-        if (largeIcon != null) {
+        if (largeIcon != null)
             builder.setLargeIcon(largeIcon);
-        } else {
+        else {
             // Set large icon as the original app icon (fallback)
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(getApplicationContext(), notification.packageName);
             if (appInfo.second != null) {
                 Bitmap iconBitmap;
-                if (appInfo.second instanceof BitmapDrawable) {
+                if (appInfo.second instanceof BitmapDrawable)
                     iconBitmap = ((BitmapDrawable) appInfo.second).getBitmap();
-                } else {
+                else {
                     // Convert non-BitmapDrawable to Bitmap
                     iconBitmap = Bitmap.createBitmap(
                             appInfo.second.getIntrinsicWidth(),
