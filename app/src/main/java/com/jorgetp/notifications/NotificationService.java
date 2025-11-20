@@ -33,12 +33,17 @@ import com.jorgetp.notifications.dao.StoredNotification;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
+    private static final long CACHE_DURATION = 120000; // 2 minutes in milliseconds
+    private static final int MAX_CACHE_SIZE = 1000; // Prevent memory issues
     private final Random random = new Random();
+    private final Map<String, Long> recentNotifications = new ConcurrentHashMap<>();  // Memory cache
     private NotificationManager manager;
 
     @Override
@@ -123,20 +128,29 @@ public class NotificationService extends NotificationListenerService {
             IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
             SharedPreferences settingsPrefs = MainActivity.getPrefs(NotificationService.this, SETTINGS_PREFS);
-            StoredNotification sameNotification = notificationDao.getByDedupeKey(sn.dedupeKey);
+
+            // Clean expired cache entries
+            cleanExpiredCache();
+
+            // Check memory cache only for deduplication
+            boolean isRecentDuplicate = checkMemoryCache(sn);
+
+            if (isRecentDuplicate) {
+                // Skip processing this notification - it's a recent duplicate
+                Log.d("NotificationService", "Skipping duplicate notification: " + sn.dedupeKey);
+                return;
+            }
+
+            // Add to memory cache
+            addToMemoryCache(sn);
 
             // Set pinned
             String importantSenderKey = sbn.getPackageName() + "/" + title;
             sn.pinned = settingsPrefs.getBoolean("pin_important_senders", false) &&
                     importantSenders.contains(importantSenderKey);
 
-            // Save notification
-            if (sameNotification == null)
-                notificationDao.insert(sn);
-            else {
-                sn.uuid = sameNotification.uuid;
-                notificationDao.update(sn);
-            }
+            // Always insert new notification (no database deduplication)
+            notificationDao.insert(sn);
 
             // Save large icon if present
             if (largeIconBytesFinal != null && title != null) {
@@ -154,7 +168,7 @@ public class NotificationService extends NotificationListenerService {
             }
 
             // Post silenced notification
-            if (sameNotification == null && isSilenced) {
+            if (isSilenced) {
                 Bitmap largeIconBitmap = largeIconBytesFinal != null ? byteArrayToBitmap(largeIconBytesFinal) : null;
                 postSilencedNotification(sn, smallIcon, largeIconBitmap);
             }
@@ -286,5 +300,40 @@ public class NotificationService extends NotificationListenerService {
 
         // Finally notify
         manager.notify(random.nextInt(Integer.MAX_VALUE), builder.build());
+    }
+
+
+    private void cleanExpiredCache() {
+        long currentTime = System.currentTimeMillis();
+        recentNotifications.entrySet().removeIf(entry ->
+                currentTime - entry.getValue() > CACHE_DURATION);
+    }
+
+    private boolean checkMemoryCache(StoredNotification notification) {
+        Long lastSeen = recentNotifications.get(notification.dedupeKey);
+        if (lastSeen != null) {
+            long timeDiff = System.currentTimeMillis() - lastSeen;
+            return timeDiff <= CACHE_DURATION;
+        }
+        return false;
+    }
+
+    private void addToMemoryCache(StoredNotification notification) {
+        // Prevent unbounded growth
+        if (recentNotifications.size() >= MAX_CACHE_SIZE) {
+            cleanExpiredCache();
+
+            // If still too large, remove oldest entries
+            if (recentNotifications.size() >= MAX_CACHE_SIZE) {
+                String oldestKey = recentNotifications.entrySet().stream()
+                        .min(Map.Entry.comparingByValue())
+                        .map(Map.Entry::getKey)
+                        .orElse(null);
+                if (oldestKey != null) {
+                    recentNotifications.remove(oldestKey);
+                }
+            }
+        }
+        recentNotifications.put(notification.dedupeKey, System.currentTimeMillis());
     }
 }

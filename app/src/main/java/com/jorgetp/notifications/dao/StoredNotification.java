@@ -12,7 +12,6 @@ public class StoredNotification {
     public String uuid;
 
     public long postTime;
-    public String dedupeKey;
     public String packageName;
     public String title;
     public String text;
@@ -20,6 +19,9 @@ public class StoredNotification {
 
     @ColumnInfo(defaultValue = "0")
     public boolean pinned;
+
+    // Transient field for memory cache only
+    public transient String dedupeKey;
 
     public StoredNotification(long postTime, @NonNull String uuid, String packageName, String title, String text, String category) {
         this.postTime = postTime;
@@ -30,6 +32,7 @@ public class StoredNotification {
         this.category = category;
         this.pinned = false;
 
+        // Generate dedupeKey for memory cache (not stored in DB)
         long postTimeBlock = postTime / 60000;
         String shortText = text.substring(0, Math.min(300, text.length()));
         this.dedupeKey = postTimeBlock + "|" + packageName + "|" + title + "|" + shortText;

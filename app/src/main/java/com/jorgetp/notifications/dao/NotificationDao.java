@@ -16,9 +16,6 @@ public interface NotificationDao {
     @Update
     void update(StoredNotification notification);
 
-    @Query(value = "SELECT * FROM notifications WHERE dedupeKey = :dedupeKey")
-    StoredNotification getByDedupeKey(String dedupeKey);
-
     @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName AND pinned = :pinned ORDER BY postTime DESC LIMIT :limit")
     List<StoredNotification> getByPackageAndPinned(String packageName, int pinned, int limit);
 
