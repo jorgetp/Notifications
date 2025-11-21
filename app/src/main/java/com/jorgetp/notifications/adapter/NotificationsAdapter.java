@@ -282,7 +282,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);
                 popup.getMenu().findItem(R.id.pin).setVisible(!notification.pinned);
                 popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
-                //popup.getMenu().findItem(R.id.delete).setVisible(false);
+                popup.getMenu().findItem(R.id.delete).setVisible(!notification.pinned);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
@@ -328,7 +328,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
                     } else if (itemId == R.id.silence_app) {
                         silencedAppsPrefs.edit().putInt(packageName, ALWAYS).apply();
-                        notifyItemChanged(position);
+                        //notifyItemChanged(position);
                         Toast.makeText(activity, activity.getString(R.string.silenced_always),
                                 Toast.LENGTH_SHORT).show();
                         return true;
@@ -336,7 +336,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                     } else if (itemId == R.id.set_as_important) {
                         importantSendersPrefs.edit().putString(packageName + "/" + title,
                                 notification.uuid).apply();
-                        notifyItemChanged(position);
+                        //notifyItemChanged(position);
                         Toast.makeText(activity, activity.getString(R.string.set_as_important),
                                 Toast.LENGTH_SHORT).show();
                         return true;

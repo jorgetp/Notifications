@@ -24,7 +24,6 @@ import com.jorgetp.notifications.adapter.SettingsAdapter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -51,8 +50,8 @@ public class SettingsActivity extends AppCompatActivity {
             @Override
             public void handleOnBackPressed() {
                 Intent resultIntent = new Intent();
-                TreeSet<String> editedItems = adapter.getEditedItems();
-                resultIntent.putExtra("edited_items", editedItems);
+                /*TreeSet<String> editedItems = adapter.getEditedItems();
+                resultIntent.putExtra("edited_items", editedItems);*/
                 setResult(RESULT_OK, resultIntent);
                 finish();
             }

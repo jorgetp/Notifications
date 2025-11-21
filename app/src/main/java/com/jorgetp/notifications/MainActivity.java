@@ -35,7 +35,6 @@ import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredNotification;
 
-import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -45,7 +44,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -56,22 +54,19 @@ public class MainActivity extends AppCompatActivity {
     public static final String SETTINGS_PREFS = "Notifications-Settings";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
-
-    private ExecutorService executor;
-    private long lastPauseTimestamp = Long.MAX_VALUE;
-    private NotificationDao notificationDao;
-
-    private NotificationsAdapter adapter;
-    private String selectedPackage = "all";
-
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(), result -> {
                 if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    Serializable editedItems = result.getData().getSerializableExtra("edited_items");
+                    /*Serializable editedItems = result.getData().getSerializableExtra("edited_items");
                     if (editedItems instanceof TreeSet)
-                        getNotificationsAndRefreshUI();
+                        getNotificationsAndRefreshUI();*/
                 }
             });
+    private ExecutorService executor;
+    private long lastPauseTimestamp = Long.MAX_VALUE;
+    private NotificationDao notificationDao;
+    private NotificationsAdapter adapter;
+    private String selectedPackage = "all";
 
     public static SharedPreferences getPrefs(Context context, String name) {
         return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);
@@ -278,8 +273,10 @@ public class MainActivity extends AppCompatActivity {
 
                     popup.setOnMenuItemClickListener(menuItem -> {
                         int position = menuItem.getItemId() - idOffset;
+                        String oldSelectedPackage = selectedPackage;
                         selectedPackage = appPacks.get(position).getPackageName();
-                        getNotificationsAndRefreshUI();
+                        if (!oldSelectedPackage.equals(selectedPackage))
+                            getNotificationsAndRefreshUI();
                         return true;
                     });
                     popup.show();

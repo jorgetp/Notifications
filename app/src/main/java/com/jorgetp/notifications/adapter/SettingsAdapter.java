@@ -14,7 +14,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.util.Pair;
 import android.view.LayoutInflater;
@@ -37,13 +36,11 @@ import com.jorgetp.notifications.R;
 import com.jorgetp.notifications.SettingsActivity;
 
 import java.util.HashMap;
-import java.util.TreeSet;
 import java.util.concurrent.Executors;
 
 public class SettingsAdapter extends NotificationsAdapter {
     public static final String CHANNEL_ID = "com.jorgetp.notifications";
 
-    private final TreeSet<String> editedItems = new TreeSet<>();
     private final ActivityResultLauncher<Intent> nslSettingsLauncher;
 
     // Track pending icon loading tasks for settings adapter
@@ -70,16 +67,6 @@ public class SettingsAdapter extends NotificationsAdapter {
                     notifyItemChanged(1);
 
                 });
-    }
-
-    // Helper method to convert byte array back to Bitmap
-    private Bitmap byteArrayToBitmap(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) return null;
-        return BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-    }
-
-    public TreeSet<String> getEditedItems() {
-        return editedItems;
     }
 
     @NonNull
@@ -176,24 +163,20 @@ public class SettingsAdapter extends NotificationsAdapter {
                     int position = holder.getBindingAdapterPosition();
 
                     if (itemId == R.id.silenced_always) {
-                        editedItems.add(app.packageName);
                         prefs.edit().putInt(app.packageName, ALWAYS).apply();
                         items.set(position, new SilencedApp(app.packageName, ALWAYS));
                         notifyItemChanged(position);
                         return true;
 
                     } else if (itemId == R.id.silenced_non_business) {
-                        editedItems.add(app.packageName);
                         prefs.edit().putInt(app.packageName, NON_BUSINESS).apply();
                         items.set(position, new SilencedApp(app.packageName, NON_BUSINESS));
                         notifyItemChanged(position);
                         return true;
 
                     } else if (itemId == R.id.not_silenced) {
-                        editedItems.add(app.packageName);
                         prefs.edit().remove(app.packageName).apply();
                         items.remove(position);
-                        // notifyDataSetChanged();
                         if (position > 0)
                             notifyItemChanged(position - 1);
                         notifyItemRemoved(position);
@@ -265,13 +248,11 @@ public class SettingsAdapter extends NotificationsAdapter {
                     .setMessage(R.string.unset_as_important_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         int position = holder.getBindingAdapterPosition();
-                        editedItems.add(sender.packageName + "/" + sender.sender);
                         MainActivity.getPrefs(activity, IMPORTANT_SENDERS_PREFS)
                                 .edit()
                                 .remove(sender.packageName + "/" + sender.sender)
                                 .apply();
                         items.remove(position);
-                        // notifyDataSetChanged();
                         if (position > 0)
                             notifyItemChanged(position - 1);
                         notifyItemRemoved(position);
