@@ -223,8 +223,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             String packageName = notification.packageName;
             String title = notification.title;
             String text = notification.text;
-            boolean isSilencedApp = silencedAppsPrefs.contains(packageName);
-            boolean isImportant = importantSendersPrefs.contains(packageName + "/" + title);
 
             long postTime = notification.postTime;
             Date date = MainActivity.toDate(postTime);
@@ -237,7 +235,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
 
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, packageName);
-            int position = holder.getBindingAdapterPosition();
 
             holder.tvTitle.setText(!title.isEmpty() ? title : activity.getString(R.string.no_title));
             holder.tvText.setText(text);
@@ -278,11 +275,15 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.itemView.setOnClickListener(v -> {
                 PopupMenu popup = createPopupMenu(v);
 
-                popup.getMenu().findItem(R.id.silence_app).setVisible(!isSilencedApp);
-                popup.getMenu().findItem(R.id.set_as_important).setVisible(!isImportant);
+                popup.getMenu().findItem(R.id.silence_app).setVisible(
+                        !silencedAppsPrefs.contains(packageName));
+                popup.getMenu().findItem(R.id.set_as_important).setVisible(
+                        !importantSendersPrefs.contains(packageName + "/" + title));
                 popup.getMenu().findItem(R.id.pin).setVisible(!notification.pinned);
                 popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
                 popup.getMenu().findItem(R.id.delete).setVisible(!notification.pinned);
+
+                int position = holder.getBindingAdapterPosition();
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
@@ -306,10 +307,16 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         new AlertDialog.Builder(activity)
                                 .setMessage(R.string.delete_confirmation)
                                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
+                                    /*items.remove(position);
+                                    if (position > 0)
+                                        notifyItemChanged(position - 1);
+                                    notifyItemRemoved(position);
+                                    notifyItemRangeChanged(position, getItemCount() - position);*/
+
                                     Executors.newSingleThreadExecutor().execute(() -> {
                                         NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
                                         notificationDao.delete(notification.uuid);
-                                        activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
+                                        //activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                                     });
                                 })
                                 .setNegativeButton(android.R.string.cancel, null)
