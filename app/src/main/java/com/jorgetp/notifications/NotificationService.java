@@ -197,9 +197,7 @@ public class NotificationService extends NotificationListenerService {
         if (sbn.getPackageName().equals(getPackageName()))
             return false;
         // 2. Must be user-clearable
-        if (!sbn.isClearable())
-            return false;
-        return true;
+        return sbn.isClearable();
     }
 
     private boolean isImportantNotification(StatusBarNotification sbn) {
