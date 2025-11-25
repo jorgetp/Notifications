@@ -315,7 +315,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
                                     Executors.newSingleThreadExecutor().execute(() -> {
                                         NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
-                                        notificationDao.delete(notification.uuid);
+                                        notificationDao.delete(notification.id);
                                         //activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                                     });
                                 })
@@ -328,7 +328,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         Executors.newSingleThreadExecutor().execute(() -> {
                             NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
                             notification.pinned = !notification.pinned;
-                            notificationDao.update(notification);
+                            notificationDao.insertOrUpdate(notification);
                             activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                         });
                         return true;
@@ -342,7 +342,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
                     } else if (itemId == R.id.set_as_important) {
                         importantSendersPrefs.edit().putString(packageName + "/" + title,
-                                notification.uuid).apply();
+                                notification.id).apply();
                         //notifyItemChanged(position);
                         Toast.makeText(activity, activity.getString(R.string.set_as_important),
                                 Toast.LENGTH_SHORT).show();

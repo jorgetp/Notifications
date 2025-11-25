@@ -16,8 +16,6 @@ import android.view.MenuItem;
 import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -54,14 +52,6 @@ public class MainActivity extends AppCompatActivity {
     public static final String SETTINGS_PREFS = "Notifications-Settings";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
-    private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(
-            new ActivityResultContracts.StartActivityForResult(), result -> {
-                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
-                    /*Serializable editedItems = result.getData().getSerializableExtra("edited_items");
-                    if (editedItems instanceof TreeSet)
-                        getNotificationsAndRefreshUI();*/
-                }
-            });
     private ExecutorService executor;
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao notificationDao;
@@ -300,7 +290,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
 
         } else if (itemId == R.id.menu_settings) {
-            launcher.launch(new Intent(this, SettingsActivity.class));
+            startActivity(new Intent(this, SettingsActivity.class));
             return true;
 
         }

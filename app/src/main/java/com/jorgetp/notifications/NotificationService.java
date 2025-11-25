@@ -1,7 +1,6 @@
 package com.jorgetp.notifications;
 
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
-import static com.jorgetp.notifications.MainActivity.CHANNEL_ID;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
@@ -9,9 +8,7 @@ import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
 import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -22,7 +19,6 @@ import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
-import android.util.Pair;
 
 import com.jorgetp.notifications.dao.DbProvider;
 import com.jorgetp.notifications.dao.IconDao;
@@ -33,17 +29,9 @@ import com.jorgetp.notifications.dao.StoredNotification;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
-    private static final long CACHE_DURATION = 120000; // 2 minutes in milliseconds
-    private static final int MAX_CACHE_SIZE = 1000; // Prevent memory issues
-    private final Random random = new Random();
-    private final Map<String, Long> recentNotifications = new ConcurrentHashMap<>();  // Memory cache
     private NotificationManager manager;
 
     @Override
@@ -107,10 +95,18 @@ public class NotificationService extends NotificationListenerService {
 
         final byte[] largeIconBytesFinal = largeIconBytes;
 
-        // Create StoredNotification (without icon data)
+        // Generate dedupeKey to use as primary key
+        String dedupeKey = StoredNotification.generateDedupeKey(
+                sbn.getPostTime(),
+                sbn.getPackageName(),
+                title != null ? title : "",
+                text != null ? text.toString() : ""
+        );
+
+        // Create StoredNotification with dedupeKey as id (primary key)
         StoredNotification sn = new StoredNotification(
                 sbn.getPostTime(),
-                UUID.randomUUID().toString(),
+                dedupeKey, // Use dedupeKey as the id (primary key)
                 sbn.getPackageName(),
                 title != null ? title : "",
                 text != null ? text.toString() : "",
@@ -127,28 +123,13 @@ public class NotificationService extends NotificationListenerService {
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
             SharedPreferences settingsPrefs = MainActivity.getPrefs(NotificationService.this, SETTINGS_PREFS);
 
-            // Clean expired cache entries
-            cleanExpiredCache();
-
-            // Check memory cache only for deduplication
-            boolean isRecentDuplicate = checkMemoryCache(sn);
-
-            if (isRecentDuplicate) {
-                // Skip processing this notification - it's a recent duplicate
-                Log.d("NotificationService", "Skipping duplicate notification: " + sn.dedupeKey);
-                return;
-            }
-
-            // Add to memory cache
-            addToMemoryCache(sn);
-
             // Set pinned
             String importantSenderKey = sbn.getPackageName() + "/" + title;
             sn.pinned = settingsPrefs.getBoolean("pin_important_senders", false) &&
                     importantSenders.contains(importantSenderKey);
 
-            // Always insert new notification (no database deduplication)
-            notificationDao.insert(sn);
+            // Insert or update - duplicates will be automatically handled by database
+            notificationDao.insertOrUpdate(sn);
 
             // Save large icon if present
             if (largeIconBytesFinal != null && title != null) {
@@ -162,16 +143,10 @@ public class NotificationService extends NotificationListenerService {
 
                 // Update important sender if applicable
                 if (importantSenders.contains(importantSenderKey))
-                    importantSenders.edit().putString(importantSenderKey, sn.uuid).apply();
+                    importantSenders.edit().putString(importantSenderKey, sn.id).apply();
             }
 
-            // Post silenced notification
-            if (isSilenced) {
-                Bitmap largeIconBitmap = largeIconBytesFinal != null ? byteArrayToBitmap(largeIconBytesFinal) : null;
-                postSilencedNotification(sn, smallIcon, largeIconBitmap);
-            }
-
-            Log.d("NotificationService", "Notification processed: " + sn.uuid);
+            Log.d("NotificationService", "Notification processed: " + sn.id);
         });
     }
 
@@ -184,12 +159,6 @@ public class NotificationService extends NotificationListenerService {
             Log.e("NotificationService", "Error converting bitmap to bytes", e);
             return null;
         }
-    }
-
-    // Helper method to convert byte array back to Bitmap
-    private Bitmap byteArrayToBitmap(byte[] bytes) {
-        if (bytes == null || bytes.length == 0) return null;
-        return android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
     }
 
     public boolean isStandardNotification(StatusBarNotification sbn) {
@@ -251,85 +220,5 @@ public class NotificationService extends NotificationListenerService {
             default:
                 return false;
         }
-    }
-
-    private void postSilencedNotification(StoredNotification notification, Icon smallIcon, Bitmap largeIcon) {
-        // Create notification builder
-        Notification.Builder builder = new Notification.Builder(getApplicationContext(), CHANNEL_ID)
-                .setSmallIcon(R.drawable.outline_notifications_off_24)
-                .setContentTitle(getString(R.string.silenced_notification, notification.title))
-                .setContentText(notification.text)
-                .setAutoCancel(true)
-                .setShowWhen(true)
-                .setWhen(notification.postTime);
-
-        if (largeIcon != null)
-            builder.setLargeIcon(largeIcon);
-        else {
-            // Set large icon as the original app icon (fallback)
-            Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(getApplicationContext(), notification.packageName);
-            if (appInfo.second != null) {
-                Bitmap iconBitmap;
-                if (appInfo.second instanceof BitmapDrawable)
-                    iconBitmap = ((BitmapDrawable) appInfo.second).getBitmap();
-                else {
-                    // Convert non-BitmapDrawable to Bitmap
-                    iconBitmap = Bitmap.createBitmap(
-                            appInfo.second.getIntrinsicWidth(),
-                            appInfo.second.getIntrinsicHeight(),
-                            Bitmap.Config.ARGB_8888);
-                    Canvas canvas = new Canvas(iconBitmap);
-                    appInfo.second.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
-                    appInfo.second.draw(canvas);
-                }
-                builder.setLargeIcon(iconBitmap);
-            }
-        }
-
-        // Set tap action to open notification's original activity
-        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(notification.packageName);
-        if (launchIntent != null) {
-            builder.setContentIntent(PendingIntent.getActivity(
-                    getApplicationContext(), 0, launchIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
-        }
-
-        // Finally notify
-        manager.notify(random.nextInt(Integer.MAX_VALUE), builder.build());
-    }
-
-
-    private void cleanExpiredCache() {
-        long currentTime = System.currentTimeMillis();
-        recentNotifications.entrySet().removeIf(entry ->
-                currentTime - entry.getValue() > CACHE_DURATION);
-    }
-
-    private boolean checkMemoryCache(StoredNotification notification) {
-        Long lastSeen = recentNotifications.get(notification.dedupeKey);
-        if (lastSeen != null) {
-            long timeDiff = System.currentTimeMillis() - lastSeen;
-            return timeDiff <= CACHE_DURATION;
-        }
-        return false;
-    }
-
-    private void addToMemoryCache(StoredNotification notification) {
-        // Prevent unbounded growth
-        if (recentNotifications.size() >= MAX_CACHE_SIZE) {
-            cleanExpiredCache();
-
-            // If still too large, remove oldest entries
-            if (recentNotifications.size() >= MAX_CACHE_SIZE) {
-                String oldestKey = recentNotifications.entrySet().stream()
-                        .min(Map.Entry.comparingByValue())
-                        .map(Map.Entry::getKey)
-                        .orElse(null);
-                if (oldestKey != null) {
-                    recentNotifications.remove(oldestKey);
-                }
-            }
-        }
-        recentNotifications.put(notification.dedupeKey, System.currentTimeMillis());
     }
 }

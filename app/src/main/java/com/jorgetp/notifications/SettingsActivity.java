@@ -4,14 +4,12 @@ import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.content.ComponentName;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 
 import androidx.activity.EdgeToEdge;
-import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -45,17 +43,6 @@ public class SettingsActivity extends AppCompatActivity {
         rvItems.setLayoutManager(lm);
         rvItems.setAdapter(adapter = new SettingsAdapter(this));
         getItemsAndRefreshUI();
-
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                Intent resultIntent = new Intent();
-                /*TreeSet<String> editedItems = adapter.getEditedItems();
-                resultIntent.putExtra("edited_items", editedItems);*/
-                setResult(RESULT_OK, resultIntent);
-                finish();
-            }
-        });
     }
 
     public void getItemsAndRefreshUI() {
