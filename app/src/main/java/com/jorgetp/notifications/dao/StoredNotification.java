@@ -33,7 +33,7 @@ public class StoredNotification {
     // Static method to generate dedupeKey
     public static String generateDedupeKey(long postTime, String packageName, String title, String text) {
         long postTimeBlock = postTime / 60000; // 1-minute blocks
-        String shortText = text.substring(0, Math.min(300, text.length()));
-        return postTimeBlock + "|" + packageName + "|" + title + "|" + shortText;
+        // String shortText = text.substring(0, Math.min(300, text.length()));
+        return postTimeBlock + "|" + packageName + "|" + title + "|" + /*shortText*/ text.hashCode();
     }
 }

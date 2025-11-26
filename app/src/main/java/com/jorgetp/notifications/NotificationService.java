@@ -62,7 +62,6 @@ public class NotificationService extends NotificationListenerService {
         CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
 
         // Get icons
-        Icon smallIcon = notification.getSmallIcon();
         Icon largeIcon = notification.getLargeIcon();
         byte[] largeIconBytes = null;
 

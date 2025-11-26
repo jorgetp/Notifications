@@ -15,7 +15,6 @@ import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.util.Pair;
-import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -209,14 +208,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             holder.ivSenderIcon.setVisibility(View.GONE);
             holder.ivSenderIcon.setImageBitmap(null);
 
-            // Limit tvTitle width
-            int maxWidth = 160;
-            if (notification.pinned)
-                maxWidth = 140;
-            holder.tvTitle.setMaxWidth((int) TypedValue.applyDimension(
-                    TypedValue.COMPLEX_UNIT_DIP, maxWidth,
-                    holder.itemView.getResources().getDisplayMetrics()));
-
             SharedPreferences silencedAppsPrefs = MainActivity.getPrefs(activity, SILENCED_APPS_PREFS);
             SharedPreferences importantSendersPrefs = MainActivity.getPrefs(activity, IMPORTANT_SENDERS_PREFS);
 
@@ -229,7 +220,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             if (date != null) {
                 SimpleDateFormat sdf = new SimpleDateFormat("h:mm a", Locale.getDefault());
                 if (notification.pinned) {
-                    sdf = new SimpleDateFormat("d MMM, h:mm a", Locale.getDefault());
+                    sdf = new SimpleDateFormat("d MMM yy, h:mm a", Locale.getDefault());
                 }
                 holder.tvTime.setText(sdf.format(date));
             }
@@ -237,6 +228,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, packageName);
 
             holder.tvTitle.setText(!title.isEmpty() ? title : activity.getString(R.string.no_title));
+            holder.tvTitle.setMaxEms(notification.pinned ? 9 : 12);
             holder.tvText.setText(text);
 
             // App icon
@@ -244,6 +236,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 holder.ivAppIcon.setImageDrawable(appInfo.second);
             else
                 holder.ivAppIcon.setImageResource(android.R.drawable.sym_def_app_icon);
+
 
             // Load icon from separate icons table with position validation
             Runnable iconTask = () -> {
@@ -257,8 +250,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                                     getItem(i) == notification) {
                                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
+                                holder.tvTitle.setMaxEms(holder.tvTitle.getMaxEms() - 2);
                             }
                         });
+
                 } catch (Exception e) {
                     // Log.e("NotificationsAdapter", "Error loading icon", e);
                 } finally {
@@ -283,8 +278,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
                 popup.getMenu().findItem(R.id.delete).setVisible(!notification.pinned);
 
-                int position = holder.getBindingAdapterPosition();
-
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
                     if (itemId == R.id.copy_title) {
@@ -307,16 +300,10 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         new AlertDialog.Builder(activity)
                                 .setMessage(R.string.delete_confirmation)
                                 .setPositiveButton(android.R.string.yes, (dialog, id) -> {
-                                    /*items.remove(position);
-                                    if (position > 0)
-                                        notifyItemChanged(position - 1);
-                                    notifyItemRemoved(position);
-                                    notifyItemRangeChanged(position, getItemCount() - position);*/
-
                                     Executors.newSingleThreadExecutor().execute(() -> {
                                         NotificationDao notificationDao = DbProvider.get(activity).notificationDao();
                                         notificationDao.delete(notification.id);
-                                        //activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
+                                        activity.runOnUiThread(() -> ((MainActivity) activity).getNotificationsAndRefreshUI());
                                     });
                                 })
                                 .setNegativeButton(android.R.string.cancel, null)
