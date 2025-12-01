@@ -3,7 +3,6 @@ package com.jorgetp.notifications;
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
-import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
 import android.app.Notification;
@@ -104,8 +103,8 @@ public class NotificationService extends NotificationListenerService {
 
         // Create StoredNotification with dedupeKey as id (primary key)
         StoredNotification sn = new StoredNotification(
+                dedupeKey,
                 sbn.getPostTime(),
-                dedupeKey, // Use dedupeKey as the id (primary key)
                 sbn.getPackageName(),
                 title != null ? title : "",
                 text != null ? text.toString() : "",
@@ -120,12 +119,10 @@ public class NotificationService extends NotificationListenerService {
             NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
             IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
             SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
-            SharedPreferences settingsPrefs = MainActivity.getPrefs(NotificationService.this, SETTINGS_PREFS);
 
             // Set pinned
             String importantSenderKey = sbn.getPackageName() + "/" + title;
-            sn.pinned = settingsPrefs.getBoolean("pin_important_senders", false) &&
-                    importantSenders.contains(importantSenderKey);
+            sn.pinned = importantSenders.contains(importantSenderKey);
 
             // Insert or update - duplicates will be automatically handled by database
             notificationDao.insertOrUpdate(sn);

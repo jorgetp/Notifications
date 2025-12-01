@@ -20,7 +20,7 @@ public class StoredNotification {
     @ColumnInfo(defaultValue = "0")
     public boolean pinned;
 
-    public StoredNotification(long postTime, @NonNull String id, String packageName, String title, String text, String category) {
+    public StoredNotification(@NonNull String id, long postTime, String packageName, String title, String text, String category) {
         this.postTime = postTime;
         this.id = id;
         this.packageName = packageName;

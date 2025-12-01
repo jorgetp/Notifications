@@ -31,5 +31,4 @@
     <string name="pinned">Fijadas</string>
     <string name="pin">Fijar</string>
     <string name="unpin">Desfijar</string>
-    <string name="pin_important_senders">Fijar remitentes importantes</string>
 </resources>

@@ -3,7 +3,6 @@ package com.jorgetp.notifications.adapter;
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
-import static com.jorgetp.notifications.MainActivity.SETTINGS_PREFS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 import static com.jorgetp.notifications.MainActivity.getAppInfo;
 
@@ -123,15 +122,6 @@ public class SettingsAdapter extends NotificationsAdapter {
                         Intent intent = new Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
                         nslSettingsLauncher.launch(intent);
                         //}
-                    }
-                });
-            } else if (activity.getString(R.string.pin_important_senders).equals(((Switch) getItem(i)).title)) {
-                holder.ivIcon.setImageDrawable(activity.getDrawable(R.drawable.outline_keyboard_double_arrow_up_24));
-
-                holder.switch1.setOnCheckedChangeListener((buttonView, isChecked) -> {
-                    if (buttonView.isPressed()) { // to avoid infinite loop when updating the switch state programmatically
-                        MainActivity.getPrefs(activity, SETTINGS_PREFS)
-                                .edit().putBoolean("pin_important_senders", isChecked).apply();
                     }
                 });
             }

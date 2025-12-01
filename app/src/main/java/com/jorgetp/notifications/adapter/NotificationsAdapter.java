@@ -25,7 +25,6 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
-import androidx.core.view.MenuCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.jorgetp.notifications.MainActivity;
@@ -36,8 +35,6 @@ import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredIcon;
 import com.jorgetp.notifications.dao.StoredNotification;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -228,7 +225,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, packageName);
 
             holder.tvTitle.setText(!title.isEmpty() ? title : activity.getString(R.string.no_title));
-            holder.tvTitle.setMaxEms(notification.pinned ? 9 : 12);
+            holder.tvTitle.setMaxEms(notification.pinned ? 9 : 13);
             holder.tvText.setText(text);
 
             // App icon
@@ -250,7 +247,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                                     getItem(i) == notification) {
                                 holder.ivSenderIcon.setImageBitmap(iconBitmap);
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
-                                holder.tvTitle.setMaxEms(holder.tvTitle.getMaxEms() - 2);
+                                holder.tvTitle.setMaxEms(holder.tvTitle.getMaxEms() - 3);
                             }
                         });
 
@@ -268,7 +265,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             // when item is clicked, show a menu with several options
             holder.itemView.setOnClickListener(v -> {
-                PopupMenu popup = createPopupMenu(v);
+                PopupMenu popup = MainActivity.createPopupMenu(activity, R.menu.menu_notification_popup, v);
 
                 popup.getMenu().findItem(R.id.silence_app).setVisible(
                         !silencedAppsPrefs.contains(packageName));
@@ -342,28 +339,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                 popup.show();
             });
         }
-    }
-
-    protected PopupMenu createPopupMenu(View anchor) {
-        PopupMenu popup = new PopupMenu(activity, anchor);
-        popup.getMenuInflater().inflate(R.menu.menu_notification_popup, popup.getMenu());
-
-        // Force icons to show using reflection
-        try {
-            Field mPopup = PopupMenu.class.getDeclaredField("mPopup");
-            mPopup.setAccessible(true);
-            Object menuPopupHelper = mPopup.get(popup);
-            Class<?> classPopupHelper = Class.forName(menuPopupHelper.getClass().getName());
-            Method setForceIcons = classPopupHelper.getMethod("setForceShowIcon", boolean.class);
-            setForceIcons.invoke(menuPopupHelper, true);
-            MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
-
-        } catch (Exception e) {
-            Log.e("NotificationsAdapter", "Error showing popup menu", e);
-            // e.printStackTrace();
-        }
-
-        return popup;
     }
 
     protected Bitmap getSenderIcon(String packageName, String title, String category) {

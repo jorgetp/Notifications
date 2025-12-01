@@ -1,6 +1,7 @@
 package com.jorgetp.notifications;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -13,6 +14,7 @@ import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
@@ -33,6 +35,8 @@ import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.NotificationDao;
 import com.jorgetp.notifications.dao.StoredNotification;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -46,10 +50,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-    public static final String CHANNEL_ID = "com.jorgetp.notifications";
     public static final String SILENCED_APPS_PREFS = "Notifications-Silenced-Apps";
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
-    public static final String SETTINGS_PREFS = "Notifications-Settings";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
     private ExecutorService executor;
@@ -102,6 +104,29 @@ public class MainActivity extends AppCompatActivity {
         LocalDate givenDate = date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate yesterday = LocalDate.now().minusDays(1);
         return givenDate.equals(yesterday);
+    }
+
+    public static PopupMenu createPopupMenu(Activity activity, int menuRes, View anchor) {
+        PopupMenu popup = new PopupMenu(activity, anchor);
+        if (menuRes != -1)
+            popup.getMenuInflater().inflate(menuRes, popup.getMenu());
+
+        // Force icons to show using reflection
+        try {
+            Field mPopup = PopupMenu.class.getDeclaredField("mPopup");
+            mPopup.setAccessible(true);
+            Object menuPopupHelper = mPopup.get(popup);
+            Class<?> classPopupHelper = Class.forName(menuPopupHelper.getClass().getName());
+            Method setForceIcons = classPopupHelper.getMethod("setForceShowIcon", boolean.class);
+            setForceIcons.invoke(menuPopupHelper, true);
+            MenuCompat.setGroupDividerEnabled(popup.getMenu(), true);
+
+        } catch (Exception e) {
+            Log.e("NotificationsAdapter", "Error showing popup menu", e);
+            // e.printStackTrace();
+        }
+
+        return popup;
     }
 
     // Helper method to clean up orphaned icons
@@ -230,7 +255,8 @@ public class MainActivity extends AppCompatActivity {
                 final int idOffset = 504321;
 
                 runOnUiThread(() -> {
-                    PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
+                    //PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
+                    PopupMenu popup = createPopupMenu(MainActivity.this, -1, findViewById(R.id.menu_filter));
 
                     for (int i = 0; i < appPacks.size(); i++) {
                         MenuItem menuItem = popup.getMenu().add(
@@ -247,18 +273,6 @@ public class MainActivity extends AppCompatActivity {
                         // Resize icon to appropriate size
                         icon.setBounds(0, 0, 64, 64); // 32dp in pixels approximately
                         menuItem.setIcon(icon);
-                    }
-
-                    // Force show icons in popup menu
-                    try {
-                        java.lang.reflect.Field field = popup.getClass().getDeclaredField("mPopup");
-                        field.setAccessible(true);
-                        Object menuPopupHelper = field.get(popup);
-                        Class<?> classPopupHelper = Class.forName(menuPopupHelper.getClass().getName());
-                        java.lang.reflect.Method setForceIcons = classPopupHelper.getMethod("setForceShowIcon", boolean.class);
-                        setForceIcons.invoke(menuPopupHelper, true);
-                    } catch (Exception e) {
-                        // Ignore reflection errors - icons just won't show
                     }
 
                     popup.setOnMenuItemClickListener(menuItem -> {

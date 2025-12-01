@@ -52,8 +52,6 @@ public class SettingsActivity extends AppCompatActivity {
             // General settings
             items.add(getString(R.string.general));
             items.add(new SettingsAdapter.Switch(getString(R.string.nsl), isNotificationServiceEnabled()));
-            /*items.add(new SettingsAdapter.Switch(getString(R.string.pin_important_senders),
-                    MainActivity.getPrefs(this, SETTINGS_PREFS).getBoolean("pin_important_senders", false)));*/
 
             // Important senders
             ArrayList<SettingsAdapter.ImportantSender> senders = new ArrayList<SettingsAdapter.ImportantSender>(10);
