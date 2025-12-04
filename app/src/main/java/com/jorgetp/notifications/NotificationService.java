@@ -158,34 +158,31 @@ public class NotificationService extends NotificationListenerService {
                             title.toLowerCase().contains("conducción"))) {
 
                 try {
-                    LocationServices.getFusedLocationProviderClient(getApplicationContext()).getCurrentLocation(
-                            LocationRequest.PRIORITY_HIGH_ACCURACY,
-                            null
-                    ).addOnSuccessListener(location -> {
-                        if (location != null) {
-                            // get readable address
-                            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-                            try {
-                                List<Address> addresses = geocoder.getFromLocation(
-                                        location.getLatitude(),
-                                        location.getLongitude(),
-                                        1 // max results
-                                );
+                    LocationServices.getFusedLocationProviderClient(getApplicationContext())
+                            .getCurrentLocation(
+                                    LocationRequest.PRIORITY_HIGH_ACCURACY,
+                                    null
+                            ).addOnSuccessListener(location -> {
+                                if (location != null) {
+                                    // get readable address
+                                    Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                                    try {
+                                        List<Address> addresses = geocoder.getFromLocation(
+                                                location.getLatitude(),
+                                                location.getLongitude(),
+                                                1 // max results
+                                        );
 
-                                if (addresses != null && !addresses.isEmpty()) {
-                                    sn.text = addresses.get(0).getAddressLine(0);
-                                    Log.d("NotificationService", "Location processed: " + sn.id + " - " + sn.text);
-                                    Executors.newSingleThreadExecutor().execute(() -> {
-                                        notificationDao.insertOrUpdate(sn);
-                                    });
+                                        if (addresses != null && !addresses.isEmpty()) {
+                                            sn.text = addresses.get(0).getAddressLine(0);
+                                            Executors.newSingleThreadExecutor().execute(() ->
+                                                    notificationDao.insertOrUpdate(sn));
+                                        }
+                                    } catch (Exception e) {
+                                        // Log.e("Address", "Geocoder failed", e);
+                                    }
                                 }
-                            } catch (Exception e) {
-                                // Log.e("Address", "Geocoder failed", e);
-                            }
-                        }
-                    }).addOnFailureListener(e -> {
-                        // Log.e("NotificationService", "Error getting location", e);
-                    });
+                            });
                 } catch (Exception e) {
                     // Log.e("NotificationService", "Error getting location", e);
                 }
