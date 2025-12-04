@@ -5,7 +5,6 @@ import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
 
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -15,15 +14,11 @@ import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
-import android.location.Address;
-import android.location.Geocoder;
 import android.os.Bundle;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
 
-import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.location.Priority;
 import com.jorgetp.notifications.dao.DbProvider;
 import com.jorgetp.notifications.dao.IconDao;
 import com.jorgetp.notifications.dao.NotificationDao;
@@ -33,8 +28,6 @@ import com.jorgetp.notifications.dao.StoredNotification;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Calendar;
-import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
@@ -149,8 +142,6 @@ public class NotificationService extends NotificationListenerService {
                     importantSenders.edit().putString(importantSenderKey, sn.id).apply();
             }
 
-            fillPlaceholders(sn);
-
             Log.d("NotificationService", "Notification processed: " + sn.id);
         });
     }
@@ -224,53 +215,6 @@ public class NotificationService extends NotificationListenerService {
                 return !isImportantNotification(sbn) && !isBusinessHour();
             default:
                 return false;
-        }
-    }
-
-    @SuppressLint("MissingPermission")
-    private void fillPlaceholders(StoredNotification sn) {
-        if (sn.text == null)
-            return;
-
-        Context ctx = getApplicationContext();
-
-        // replace ${ADDRESS} or ${COORDINATES} in text with location info
-        if (sn.text.contains("${ADDRESS}") || sn.text.contains("${COORDINATES}")) {
-            try {
-                LocationServices
-                        .getFusedLocationProviderClient(ctx)
-                        .getCurrentLocation(
-                                Priority.PRIORITY_HIGH_ACCURACY,
-                                null
-                        ).addOnSuccessListener(location -> {
-                            if (location != null) {
-                                try {
-                                    // get readable address
-                                    Geocoder geocoder = new Geocoder(this, Locale.getDefault());
-                                    List<Address> addresses = geocoder.getFromLocation(
-                                            location.getLatitude(),
-                                            location.getLongitude(),
-                                            1 // max results
-                                    );
-                                    sn.text = sn.text.replace("${COORDINATES}",
-                                            location.getLatitude() + "," + location.getLongitude());
-
-                                    if (addresses != null && !addresses.isEmpty()) {
-                                        sn.text = sn.text.replace("${ADDRESS}",
-                                                addresses.get(0).getAddressLine(0).replaceAll("\n", ", "));
-                                    }
-
-                                    Executors.newSingleThreadExecutor().execute(() ->
-                                            DbProvider.get(ctx).notificationDao().insertOrUpdate(sn));
-
-                                } catch (Exception e) {
-                                    // Log.e("Address", "Geocoder failed", e);
-                                }
-                            }
-                        });
-            } catch (Exception e) {
-                // Log.e("NotificationService", "Error getting location", e);
-            }
         }
     }
 }
