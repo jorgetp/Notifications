@@ -263,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
                                 Menu.NONE,
                                 idOffset + i,
                                 Menu.NONE,
-                                appPacks.get(i).getDisplayName());
+                                appPacks.get(i).getPackageName());
 
                         // Set icon for each menu item
                         Drawable icon = appPacks.get(i).getIcon();
