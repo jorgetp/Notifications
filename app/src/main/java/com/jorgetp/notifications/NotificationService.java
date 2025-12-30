@@ -31,6 +31,11 @@ import java.util.Calendar;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
+    private static final String[] FINANCIAL_APPS = {
+            "com.bbva.bbvacontigo",
+            "ch.viseca.visecaone",
+            "com.revolut.revolut"
+    };
     private NotificationManager manager;
 
     @Override
@@ -122,7 +127,7 @@ public class NotificationService extends NotificationListenerService {
 
             // Set pinned
             String importantSenderKey = sbn.getPackageName() + "/" + title;
-            sn.pinned = importantSenders.contains(importantSenderKey);
+            sn.pinned = importantSenders.contains(importantSenderKey) || isImportantFinancialNotification(sbn);
 
             // Insert or update - duplicates will be automatically handled by database
             notificationDao.insertOrUpdate(sn);
@@ -174,6 +179,38 @@ public class NotificationService extends NotificationListenerService {
                 return MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS).contains(packageName + "/" + title);
         }
         return false;
+    }
+
+    private boolean isFinancialNotification(StatusBarNotification sbn) {
+        String packageName = sbn.getPackageName();
+        for (String financialApp : FINANCIAL_APPS) {
+            if (packageName.equals(financialApp)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean containsCurrency(StatusBarNotification sbn) {
+        Bundle extras = sbn.getNotification().extras;
+        if (extras != null) {
+            CharSequence text = extras.getCharSequence(Notification.EXTRA_TEXT);
+            if (text != null) {
+                try {
+                    String currencySymbols = "[$€£¥₹₩₽₺₪₫฿₴₦₲₵₡₭₸៛]";
+                    String currencyCodes = "(USD|EUR|GBP|CHF|JPY|INR|KRW|RUB|TRY|ILS|VND|THB|UAH|NGN|PYG|GHS|CRC|LAK|KZT|KHR)";
+                    // return true if text contains either a currency symbol or code
+                    return text.toString().matches(".*(" + currencySymbols + "|" + currencyCodes + ").*");
+                } catch (Exception e) {
+                    Log.e("NotificationService", "Error parsing amount", e);
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean isImportantFinancialNotification(StatusBarNotification sbn) {
+        return isFinancialNotification(sbn) && containsCurrency(sbn);
     }
 
     // true if weekend or weekdays 08:00-17:30
