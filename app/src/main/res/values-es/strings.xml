@@ -1,8 +1,8 @@
 <resources>
     <string name="app_name">Notificaciones</string>
     <string name="nsl">Captura notificaciones</string>
-    <string name="menu_delete_all">Borrar todo</string>
-    <string name="menu_delete_all_confirmation">¿Estás seguro de que deseas borrar todas las notificaciones?</string>
+    <string name="menu_delete">Borrar no fijadas</string>
+    <string name="menu_delete_all_confirmation">¿Estás seguro de que deseas borrar todas las notificaciones no fijadas?</string>
     <string name="copy_title">Copiar remitente</string>
     <string name="copy_text">Copiar mensaje</string>
     <string name="notifications_deleted">Notificaciones eliminadas</string>

@@ -288,12 +288,12 @@ public class MainActivity extends AppCompatActivity {
             });
             return true;
 
-        } else if (itemId == R.id.menu_delete_all) {
+        } else if (itemId == R.id.menu_delete) {
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_delete_all_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
                         Executors.newSingleThreadExecutor().execute(() -> {
-                            notificationDao.deleteAll();
+                            notificationDao.deleteUnpinned();
                             cleanupOrphanedIcons();
                             getNotificationsAndRefreshUI();
                         });

@@ -19,8 +19,8 @@ public interface NotificationDao {
     @Query("DELETE FROM notifications WHERE id = :id")
     void delete(String id);
 
-    @Query("DELETE FROM notifications")
-    void deleteAll();
+    @Query("DELETE FROM notifications WHERE pinned = 0")
+    void deleteUnpinned();
 
     @Query("SELECT * FROM notifications ORDER BY postTime DESC LIMIT 1")
     LiveData<StoredNotification> observeLast();
