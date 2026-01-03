@@ -167,7 +167,12 @@ public class NotificationService extends NotificationListenerService {
         if (sbn.getPackageName().equals(getPackageName()))
             return false;
         // 2. Must be user-clearable
-        return sbn.isClearable();
+        if (!sbn.isClearable())
+            return false;
+        // 3. Must not be ongoing
+        if ((sbn.getNotification().flags & Notification.FLAG_ONGOING_EVENT) != 0)
+            return false;
+        return true;
     }
 
     private boolean isImportantNotification(StatusBarNotification sbn) {
@@ -176,7 +181,8 @@ public class NotificationService extends NotificationListenerService {
         if (extras != null) {
             CharSequence title = extras.getCharSequence(Notification.EXTRA_TITLE);
             if (title != null)
-                return MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS).contains(packageName + "/" + title);
+                return MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS)
+                        .contains(packageName + "/" + title);
         }
         return false;
     }
