@@ -50,13 +50,6 @@ public class NotificationService extends NotificationListenerService {
         }
     }
 
-    private boolean shouldBeSaved(StoredNotification sn) {
-        if ("com.samsung.android.app.routines".equals(sn.packageName) &&
-                ("Se activó Conduciendo".equals(sn.title) || "".equals(sn.title)))
-            return false;
-        return true;
-    }
-
     @Override
     public void onCreate() {
         super.onCreate();
@@ -128,32 +121,30 @@ public class NotificationService extends NotificationListenerService {
 
         // Asynchronously continue processing
         Executors.newSingleThreadExecutor().execute(() -> {
-            if (shouldBeSaved(sn)) {
-                NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
-                IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
-                SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
+            NotificationDao notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
+            IconDao iconDao = DbProvider.get(getApplicationContext()).iconDao();
+            SharedPreferences importantSenders = MainActivity.getPrefs(NotificationService.this, IMPORTANT_SENDERS_PREFS);
 
-                // Set pinned
-                String importantSenderKey = sbn.getPackageName() + "/" + title;
-                sn.pinned = importantSenders.contains(importantSenderKey) || isImportantFinancialNotification(sbn);
+            // Set pinned
+            String importantSenderKey = sbn.getPackageName() + "/" + title;
+            sn.pinned = importantSenders.contains(importantSenderKey) || isImportantFinancialNotification(sbn);
 
-                // Insert or update - duplicates will be automatically handled by database
-                notificationDao.insertOrUpdate(sn);
+            // Insert or update - duplicates will be automatically handled by database
+            notificationDao.insertOrUpdate(sn);
 
-                // Save large icon if present
-                if (largeIconBytesFinal != null && title != null) {
-                    StoredIcon icon = new StoredIcon(
-                            sbn.getPackageName(),
-                            title,
-                            largeIconBytesFinal,
-                            System.currentTimeMillis()
-                    );
-                    iconDao.insertOrUpdate(icon);
+            // Save large icon if present
+            if (largeIconBytesFinal != null && title != null) {
+                StoredIcon icon = new StoredIcon(
+                        sbn.getPackageName(),
+                        title,
+                        largeIconBytesFinal,
+                        System.currentTimeMillis()
+                );
+                iconDao.insertOrUpdate(icon);
 
-                    // Update important sender if applicable
-                    if (importantSenders.contains(importantSenderKey))
-                        importantSenders.edit().putString(importantSenderKey, sn.id).apply();
-                }
+                // Update important sender if applicable
+                if (importantSenders.contains(importantSenderKey))
+                    importantSenders.edit().putString(importantSenderKey, sn.id).apply();
             }
 
             Log.d("NotificationService", "Notification processed: " + sn.id);

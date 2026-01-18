@@ -54,6 +54,11 @@ public class MainActivity extends AppCompatActivity {
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
+    public static final List<String> IGNORED_APPS = List.of(
+            "com.samsung.android.app.routines",
+            "com.sec.android.app.samsungapps",
+            "com.samsung.wearable.watch6plugin");
+
     private ExecutorService executor;
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao notificationDao;
@@ -318,14 +323,14 @@ public class MainActivity extends AppCompatActivity {
             ArrayList<Object> items = new ArrayList<>(2 * limit);
 
             // pinned
-            List<StoredNotification> pinned = notificationDao.getByPackageAndPinned(packageFilter, 1, limit);
+            List<StoredNotification> pinned = notificationDao.getByPackageAndPinned(packageFilter, IGNORED_APPS, 1, limit);
             if (!pinned.isEmpty()) {
                 items.add(getString(R.string.pinned));
                 items.addAll(pinned);
             }
 
             // unpinned
-            List<StoredNotification> unpinned = notificationDao.getByPackageAndPinned(packageFilter, 0, limit);
+            List<StoredNotification> unpinned = notificationDao.getByPackageAndPinned(packageFilter, IGNORED_APPS, 0, limit);
             if (!unpinned.isEmpty()) {
                 Date previousDate = null;
                 for (StoredNotification notification : unpinned) {
