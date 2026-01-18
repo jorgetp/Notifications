@@ -226,7 +226,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
 
             holder.tvTitle.setText(!title.isEmpty() ? title : activity.getString(R.string.no_title));
             holder.tvTitle.setMaxEms(notification.pinned ? 9 : 13);
-            holder.tvText.setText(packageName + "|" + text);
+            //holder.tvText.setText(packageName + "|" + text);
+            holder.tvText.setText(text);
 
             // App icon
             if (appInfo.second != null)
