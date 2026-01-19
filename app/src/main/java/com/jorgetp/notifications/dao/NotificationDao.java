@@ -25,6 +25,6 @@ public interface NotificationDao {
     @Query("SELECT * FROM notifications ORDER BY postTime DESC LIMIT 1")
     LiveData<StoredNotification> observeLast();
 
-    @Query("SELECT DISTINCT packageName FROM notifications")
-    List<String> getPackages();
+    @Query("SELECT DISTINCT packageName FROM notifications WHERE packageName NOT IN (:ignoredPackages)")
+    List<String> getPackages(List<String> ignoredPackages);
 }

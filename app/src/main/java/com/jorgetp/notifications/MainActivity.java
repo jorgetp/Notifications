@@ -242,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
                         return icon;
                     }
                 }
-                List<String> packages = notificationDao.getPackages();
+                List<String> packages = notificationDao.getPackages(IGNORED_APPS);
                 ArrayList<AppPack> appPacks = new ArrayList<>(packages.size());
 
                 for (String packageName : packages) {
