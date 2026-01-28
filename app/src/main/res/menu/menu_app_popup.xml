@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/silenced_n_hidden_always"
+        android:title="@string/silenced_n_hidden_always" />
+    <item
         android:id="@+id/silenced_always"
         android:title="@string/silenced_always" />
     <item

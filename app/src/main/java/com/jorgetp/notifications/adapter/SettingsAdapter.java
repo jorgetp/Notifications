@@ -1,6 +1,7 @@
 package com.jorgetp.notifications.adapter;
 
 import static com.jorgetp.notifications.MainActivity.ALWAYS;
+import static com.jorgetp.notifications.MainActivity.ALWAYS_AND_HIDDEN;
 import static com.jorgetp.notifications.MainActivity.IMPORTANT_SENDERS_PREFS;
 import static com.jorgetp.notifications.MainActivity.NON_BUSINESS;
 import static com.jorgetp.notifications.MainActivity.SILENCED_APPS_PREFS;
@@ -140,8 +141,17 @@ public class SettingsAdapter extends NotificationsAdapter {
             else
                 holder.ivIcon.setImageResource(android.R.drawable.sym_def_app_icon);
 
-            holder.tvSilencedWhen.setText(app.silencedWhen == ALWAYS ? activity.getString(R.string.silenced_always)
-                    : activity.getString(R.string.silenced_non_business));
+            switch (app.silencedWhen) {
+                case ALWAYS_AND_HIDDEN:
+                    holder.tvSilencedWhen.setText(R.string.silenced_n_hidden_always);
+                    break;
+                case ALWAYS:
+                    holder.tvSilencedWhen.setText(R.string.silenced_always);
+                    break;
+                case NON_BUSINESS:
+                    holder.tvSilencedWhen.setText(R.string.silenced_non_business);
+                    break;
+            }
 
             holder.itemView.setOnClickListener(v -> {
                 PopupMenu popup = new PopupMenu(activity, v);
@@ -152,7 +162,13 @@ public class SettingsAdapter extends NotificationsAdapter {
                     int itemId = item.getItemId();
                     int position = holder.getBindingAdapterPosition();
 
-                    if (itemId == R.id.silenced_always) {
+                    if (itemId == R.id.silenced_n_hidden_always) {
+                        prefs.edit().putInt(app.packageName, ALWAYS_AND_HIDDEN).apply();
+                        items.set(position, new SilencedApp(app.packageName, ALWAYS_AND_HIDDEN));
+                        notifyItemChanged(position);
+                        return true;
+
+                    } else if (itemId == R.id.silenced_always) {
                         prefs.edit().putInt(app.packageName, ALWAYS).apply();
                         items.set(position, new SilencedApp(app.packageName, ALWAYS));
                         notifyItemChanged(position);

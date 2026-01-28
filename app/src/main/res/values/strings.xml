@@ -9,6 +9,7 @@
     <string name="silenced_apps">Silenced apps</string>
     <string name="silence_app">Silence app</string>
     <string name="silenced_always">Silenced always</string>
+    <string name="silenced_n_hidden_always">Silenced &amp; hidden always</string>
     <string name="silenced_non_business">Silenced during non-business</string>
     <string name="not_silenced">Not silenced</string>
     <string name="set_as_important">Set as important</string>

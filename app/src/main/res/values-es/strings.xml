@@ -10,6 +10,7 @@
     <string name="silence_app">Silenciar app</string>
     <string name="silenced_always">Silenciada siempre</string>
     <string name="silenced_non_business">Silenciada fuera de horario laboral</string>
+    <string name="silenced_n_hidden_always">Silenciada &amp; ocultada always</string>
     <string name="not_silenced">No silenciada</string>
     <string name="set_as_important">Marcar como importante</string>
     <string name="tap_to_unset_as_important">Toca para desmarcar como importante</string>

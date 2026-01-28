@@ -46,6 +46,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -54,10 +55,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String IMPORTANT_SENDERS_PREFS = "Notifications-Important-Senders";
     public static final int ALWAYS = 1001;
     public static final int NON_BUSINESS = 1002;
-    public static final List<String> IGNORED_APPS = List.of(
-            "com.samsung.android.app.routines",
-            "com.sec.android.app.samsungapps",
-            "com.samsung.wearable.watch6plugin");
+    public static final int ALWAYS_AND_HIDDEN = 1003;
 
     private ExecutorService executor;
     private long lastPauseTimestamp = Long.MAX_VALUE;
@@ -242,7 +240,7 @@ public class MainActivity extends AppCompatActivity {
                         return icon;
                     }
                 }
-                List<String> packages = notificationDao.getPackages(IGNORED_APPS);
+                List<String> packages = notificationDao.getPackages(getHiddenApps());
                 ArrayList<AppPack> appPacks = new ArrayList<>(packages.size());
 
                 for (String packageName : packages) {
@@ -316,21 +314,35 @@ public class MainActivity extends AppCompatActivity {
         return false;
     }
 
+    public List<String> getHiddenApps() {
+        ArrayList<String> hiddenApps = new ArrayList<>();
+        SharedPreferences prefs = MainActivity.getPrefs(this, SILENCED_APPS_PREFS);
+        for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
+            String packageName = entry.getKey();
+            Integer silencedWhen = (Integer) entry.getValue();
+            if (silencedWhen == ALWAYS_AND_HIDDEN)
+                hiddenApps.add(packageName);
+        }
+        return hiddenApps;
+    }
+
     public void getNotificationsAndRefreshUI() {
         executor.submit(() -> {
             int limit = 50;
             String packageFilter = "all".equals(selectedPackage) ? "%" : selectedPackage;
             ArrayList<Object> items = new ArrayList<>(2 * limit);
 
+            List<String> hiddenApps = getHiddenApps();
+
             // pinned
-            List<StoredNotification> pinned = notificationDao.getByPackageAndPinned(packageFilter, IGNORED_APPS, 1, limit);
+            List<StoredNotification> pinned = notificationDao.getByPackageAndPinned(packageFilter, hiddenApps, 1, limit);
             if (!pinned.isEmpty()) {
                 items.add(getString(R.string.pinned));
                 items.addAll(pinned);
             }
 
             // unpinned
-            List<StoredNotification> unpinned = notificationDao.getByPackageAndPinned(packageFilter, IGNORED_APPS, 0, limit);
+            List<StoredNotification> unpinned = notificationDao.getByPackageAndPinned(packageFilter, hiddenApps, 0, limit);
             if (!unpinned.isEmpty()) {
                 Date previousDate = null;
                 for (StoredNotification notification : unpinned) {

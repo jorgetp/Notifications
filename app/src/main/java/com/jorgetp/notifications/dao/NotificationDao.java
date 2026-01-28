@@ -13,8 +13,8 @@ public interface NotificationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     void insertOrUpdate(StoredNotification notification);
 
-    @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName AND packageName NOT IN (:ignoredPackages) AND pinned = :pinned ORDER BY postTime DESC LIMIT :limit")
-    List<StoredNotification> getByPackageAndPinned(String packageName, List<String> ignoredPackages, int pinned, int limit);
+    @Query("SELECT * FROM notifications WHERE packageName LIKE :packageName AND packageName NOT IN (:hiddenApps) AND pinned = :pinned ORDER BY postTime DESC LIMIT :limit")
+    List<StoredNotification> getByPackageAndPinned(String packageName, List<String> hiddenApps, int pinned, int limit);
 
     @Query("DELETE FROM notifications WHERE id = :id")
     void delete(String id);
