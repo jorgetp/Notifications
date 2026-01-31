@@ -34,7 +34,8 @@ public class NotificationService extends NotificationListenerService {
     private static final String[] FINANCIAL_APPS = {
             "com.bbva.bbvacontigo",
             "ch.viseca.visecaone",
-            "com.revolut.revolut"
+            "com.revolut.revolut",
+            "com.transferwise.android",
     };
     private NotificationManager manager;
 
