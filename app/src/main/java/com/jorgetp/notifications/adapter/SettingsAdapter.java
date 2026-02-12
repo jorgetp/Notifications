@@ -234,7 +234,7 @@ public class SettingsAdapter extends NotificationsAdapter {
                             if (holder.getBindingAdapterPosition() == i &&
                                     i < getItemCount() &&
                                     getItem(i) == sender) {
-                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setImageBitmap(getCircularBitmap(iconBitmap));
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                             }
                         });

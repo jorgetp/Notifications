@@ -12,6 +12,11 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.util.Log;
 import android.util.Pair;
@@ -104,6 +109,23 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         }
 
         return null;
+    }
+
+    public static Bitmap getCircularBitmap(Bitmap bitmap) {
+        int size = Math.min(bitmap.getWidth(), bitmap.getHeight());
+        Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(output);
+        final Paint paint = new Paint();
+        final Rect rect = new Rect(0, 0, size, size);
+
+        paint.setAntiAlias(true);
+        canvas.drawARGB(0, 0, 0, 0);
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(bitmap, null, rect, paint);
+
+        return output;
     }
 
     // Helper method to convert byte array back to Bitmap
@@ -245,7 +267,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                             if (holder.getBindingAdapterPosition() == i &&
                                     i < getItemCount() &&
                                     getItem(i) == notification) {
-                                holder.ivSenderIcon.setImageBitmap(iconBitmap);
+                                holder.ivSenderIcon.setImageBitmap(getCircularBitmap(iconBitmap));
                                 holder.ivSenderIcon.setVisibility(View.VISIBLE);
                                 holder.tvTitle.setMaxEms(holder.tvTitle.getMaxEms() - 3);
                             }
