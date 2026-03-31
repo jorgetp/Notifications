@@ -174,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
             if (last != null && (selectedPackage.equals("all") || selectedPackage.equals(last.packageName)))
                 getNotificationsAndRefreshUI();
         });
-        
+
         /*// simulate adding notifications for testing
         executor.execute(() -> {
             String[] apps = {
@@ -195,6 +195,8 @@ public class MainActivity extends AppCompatActivity {
                     System.currentTimeMillis() - i * 60000, apps[i], "Title " + i, "Text from " + apps[i], "category"));
             }
         });*/
+
+
     }
 
     @Override

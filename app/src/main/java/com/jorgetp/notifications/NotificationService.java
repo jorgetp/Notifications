@@ -36,6 +36,7 @@ public class NotificationService extends NotificationListenerService {
             "ch.viseca.visecaone",
             "com.revolut.revolut",
             "com.transferwise.android",
+            "ch.zkb.twint"
     };
     private NotificationManager manager;
 
@@ -128,7 +129,7 @@ public class NotificationService extends NotificationListenerService {
 
             // Set pinned
             String importantSenderKey = sbn.getPackageName() + "/" + title;
-            sn.pinned = /*importantSenders.contains(importantSenderKey) ||*/ isImportantFinancialNotification(sbn);
+            //sn.pinned = importantSenders.contains(importantSenderKey) || isImportantFinancialNotification(sbn);
 
             // Insert or update - duplicates will be automatically handled by database
             notificationDao.insertOrUpdate(sn);

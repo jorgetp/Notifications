@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
@@ -48,6 +49,7 @@ public class SettingsActivity extends AppCompatActivity {
     public void getItemsAndRefreshUI() {
         Executors.newSingleThreadExecutor().execute(() -> {
             ArrayList<Object> items = new ArrayList<>(10);
+            SharedPreferences prefs;
 
             // General settings
             items.add(getString(R.string.general));
@@ -55,8 +57,10 @@ public class SettingsActivity extends AppCompatActivity {
 
             // Important senders
             ArrayList<SettingsAdapter.ImportantSender> senders = new ArrayList<SettingsAdapter.ImportantSender>(10);
-            SharedPreferences prefs2 = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
-            for (Map.Entry<String, ?> entry : prefs2.getAll().entrySet()) {
+
+            prefs = MainActivity.getPrefs(this, IMPORTANT_SENDERS_PREFS);
+            //Log.d("SettingsActivity", "Important senders prefs: " + prefs.getAll().toString());
+            for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
                 String key = entry.getKey();
                 // String value = entry.getValue().toString();
                 String[] parts = key.split("/", 2);
@@ -69,8 +73,8 @@ public class SettingsActivity extends AppCompatActivity {
 
             // Silenced apps
             ArrayList<SettingsAdapter.SilencedApp> apps = new ArrayList<>(10);
-            SharedPreferences prefs1 = MainActivity.getPrefs(this, SILENCED_APPS_PREFS);
-            for (Map.Entry<String, ?> entry : prefs1.getAll().entrySet()) {
+            prefs = MainActivity.getPrefs(this, SILENCED_APPS_PREFS);
+            for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) {
                 String packageName = entry.getKey();
                 Integer silencedWhen = (Integer) entry.getValue();
                 apps.add(new SettingsAdapter.SilencedApp(packageName, silencedWhen));
