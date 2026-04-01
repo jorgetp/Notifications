@@ -295,7 +295,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
                         !importantSendersPrefs.contains(packageName + "/" + title));
                 popup.getMenu().findItem(R.id.pin).setVisible(!notification.pinned);
                 popup.getMenu().findItem(R.id.unpin).setVisible(notification.pinned);
-                popup.getMenu().findItem(R.id.delete).setVisible(!notification.pinned);
+                //popup.getMenu().findItem(R.id.delete).setVisible(!notification.pinned);
 
                 popup.setOnMenuItemClickListener(item -> {
                     int itemId = item.getItemId();
