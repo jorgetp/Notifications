@@ -5,8 +5,8 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="4dp"
     android:layout_marginBottom="4dp"
-    android:minHeight="68dp"
-    android:paddingHorizontal="16dp">
+    android:minHeight="64dp"
+    android:paddingHorizontal="12dp">
 
     <ImageView
         android:id="@+id/ivAppIcon"
@@ -34,7 +34,7 @@
         android:layout_margin="12dp"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/ivSenderIcon"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/ivAppIcon"
         app:layout_constraintTop_toTopOf="parent">
 
