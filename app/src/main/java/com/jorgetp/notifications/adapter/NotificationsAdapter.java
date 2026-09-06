@@ -150,7 +150,7 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
     }
 
     public int getBackground(int position) {
-        boolean afterHeader = isAfterHeader(position);
+        /*boolean afterHeader = isAfterHeader(position);
         boolean beforeHeader = isBeforeHeader(position);
         if (afterHeader && beforeHeader)
             return R.drawable.rounded_all;
@@ -158,7 +158,8 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
             return R.drawable.rounded_top;
         if (beforeHeader)
             return R.drawable.rounded_bottom;
-        return R.drawable.rounded_none;
+        return R.drawable.rounded_none;*/
+        return R.drawable.rounded_all;
     }
 
     public boolean isAfterHeader(int position) {
