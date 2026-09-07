@@ -6,6 +6,7 @@
     android:layout_marginHorizontal="4dp"
     android:layout_marginBottom="4dp"
     android:background="@drawable/rounded_all"
+    android:minHeight="58dp"
     android:paddingHorizontal="10dp"
     android:paddingVertical="8dp">
 

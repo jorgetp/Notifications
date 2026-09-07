@@ -5,8 +5,9 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="4dp"
     android:background="@drawable/rounded_all"
-    android:paddingHorizontal="8dp"
-    android:paddingVertical="4dp">
+    android:paddingVertical="4dp"
+    android:paddingStart="10dp"
+    android:paddingEnd="8dp">
 
     <ImageView
         android:id="@+id/ivIcon"
