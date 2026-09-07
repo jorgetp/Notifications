@@ -112,7 +112,6 @@ public class SettingsAdapter extends NotificationsAdapter {
             SwitchViewHolder holder = (SwitchViewHolder) holderGeneric;
             holder.tvTitle.setText(((Switch) getItem(i)).title);
             holder.switch1.setChecked(((Switch) getItem(i)).checked);
-            holder.itemView.setBackgroundResource(getBackground(i));
 
             if (activity.getString(R.string.nsl).equals(((Switch) getItem(i)).title)) {
                 holder.ivIcon.setImageDrawable(getAppInfo(activity, activity.getPackageName()).second);
@@ -131,7 +130,6 @@ public class SettingsAdapter extends NotificationsAdapter {
             SilencedAppViewHolder holder = (SilencedAppViewHolder) holderGeneric;
 
             SilencedApp app = (SilencedApp) getItem(i);
-            holder.itemView.setBackgroundResource(getBackground(i));
 
             // load app name and icon
             Pair<CharSequence, Drawable> appInfo = MainActivity.getAppInfo(activity, app.packageName);
@@ -198,8 +196,6 @@ public class SettingsAdapter extends NotificationsAdapter {
         } else {
             ImportantSenderViewHolder holder = (ImportantSenderViewHolder) holderGeneric;
             ImportantSender sender = (ImportantSender) getItem(i);
-
-            holder.itemView.setBackgroundResource(getBackground(i));
 
             // Create a unique key for this ViewHolder position in settings
             String viewHolderKey = "settings_vh_" + holder.hashCode() + "_" + i;

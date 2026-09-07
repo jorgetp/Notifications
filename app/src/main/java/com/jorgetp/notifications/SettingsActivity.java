@@ -41,6 +41,10 @@ public class SettingsActivity extends AppCompatActivity {
         RecyclerView rvItems = findViewById(R.id.rvItems);
         LinearLayoutManager lm = new LinearLayoutManager(this);
         rvItems.setLayoutManager(lm);
+        /*DividerItemDecoration divider =
+                new DividerItemDecoration(this, lm.getOrientation());
+        rvItems.addItemDecoration(divider);*/
+
         rvItems.setAdapter(adapter = new SettingsAdapter(this));
         getItemsAndRefreshUI();
     }

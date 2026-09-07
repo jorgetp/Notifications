@@ -149,18 +149,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         this.items = items;
     }
 
-    public int getBackground(int position) {
-        boolean afterHeader = isAfterHeader(position);
-        boolean beforeHeader = isBeforeHeader(position);
-        if (afterHeader && beforeHeader)
-            return R.drawable.rounded_all;
-        if (afterHeader)
-            return R.drawable.rounded_top;
-        if (beforeHeader)
-            return R.drawable.rounded_bottom;
-        return R.drawable.rounded_none;
-    }
-
     public boolean isAfterHeader(int position) {
         return position == 0 || getItem(position - 1) instanceof String;
     }
@@ -211,8 +199,6 @@ public class NotificationsAdapter extends RecyclerView.Adapter<RecyclerView.View
         } else {
             StoredNotification notification = (StoredNotification) getItem(i);
             ItemViewHolder holder = (ItemViewHolder) holderGeneric;
-
-            holder.itemView.setBackgroundResource(getBackground(i));
 
             // Create a unique key for this ViewHolder position
             String viewHolderKey = "vh_" + holder.hashCode() + "_" + i;

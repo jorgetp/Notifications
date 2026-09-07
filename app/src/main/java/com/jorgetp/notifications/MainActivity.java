@@ -42,7 +42,6 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -61,7 +60,6 @@ public class MainActivity extends AppCompatActivity {
     private long lastPauseTimestamp = Long.MAX_VALUE;
     private NotificationDao notificationDao;
     private NotificationsAdapter adapter;
-    private String selectedPackage = "all";
 
     public static SharedPreferences getPrefs(Context context, String name) {
         return context.getApplicationContext().getSharedPreferences(name, Context.MODE_PRIVATE);
@@ -165,12 +163,19 @@ public class MainActivity extends AppCompatActivity {
         executor = Executors.newSingleThreadExecutor();
 
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
-        rvNotifications.setLayoutManager(new LinearLayoutManager(this));
+
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        rvNotifications.setLayoutManager(layoutManager);
+
+        /*DividerItemDecoration divider =
+                new DividerItemDecoration(this, layoutManager.getOrientation());
+        rvNotifications.addItemDecoration(divider);*/
+
         rvNotifications.setAdapter(adapter = new NotificationsAdapter(this));
 
         notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
         notificationDao.observeLast().observe(this, last -> {
-            if (last != null && (selectedPackage.equals("all") || selectedPackage.equals(last.packageName)))
+            if (last != null)
                 getNotificationsAndRefreshUI();
         });
 
@@ -203,7 +208,6 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         // refresh if 10 mins have elapsed from last pause
         if (System.currentTimeMillis() - lastPauseTimestamp > 10 * 60 * 1000) {
-            selectedPackage = "all";
             getNotificationsAndRefreshUI();
         }
     }
@@ -237,84 +241,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         int itemId = item.getItemId();
-        if (itemId == R.id.menu_filter) {
-            Executors.newSingleThreadExecutor().execute(() -> {
-                // Add a popup menu with the app names as filters
-                class AppPack {
-                    final String packageName;
-                    final CharSequence displayName;
-                    final Drawable icon;
-
-                    public AppPack(String packageName, CharSequence displayName, Drawable icon) {
-                        this.packageName = packageName;
-                        this.displayName = displayName;
-                        this.icon = icon;
-                    }
-
-                    public String getPackageName() {
-                        return packageName;
-                    }
-
-                    public CharSequence getDisplayName() {
-                        return displayName;
-                    }
-
-                    public Drawable getIcon() {
-                        return icon;
-                    }
-                }
-                List<String> packages = notificationDao.getPackages(getHiddenApps());
-                ArrayList<AppPack> appPacks = new ArrayList<>(packages.size());
-
-                for (String packageName : packages) {
-                    Pair<CharSequence, Drawable> appInfo = getAppInfo(MainActivity.this, packageName);
-                    appPacks.add(new AppPack(packageName, appInfo.first, appInfo.second));
-                }
-                appPacks.sort(Comparator.comparing(o -> o.getDisplayName().toString().toLowerCase()));
-
-                // Add "All" option at the beginning
-                appPacks.add(0, new AppPack(
-                        "all",
-                        getString(R.string.all),
-                        getDrawable(R.drawable.outline_apps_24)));
-
-                final int idOffset = 504321;
-
-                runOnUiThread(() -> {
-                    //PopupMenu popup = new PopupMenu(MainActivity.this, findViewById(R.id.menu_filter));
-                    PopupMenu popup = createPopupMenu(MainActivity.this, -1, findViewById(R.id.menu_filter));
-
-                    for (int i = 0; i < appPacks.size(); i++) {
-                        MenuItem menuItem = popup.getMenu().add(
-                                Menu.NONE,
-                                idOffset + i,
-                                Menu.NONE,
-                                appPacks.get(i).getDisplayName());
-
-                        // Set icon for each menu item
-                        Drawable icon = appPacks.get(i).getIcon();
-                        if (icon == null)
-                            icon = getDrawable(android.R.drawable.sym_def_app_icon);
-
-                        // Resize icon to appropriate size
-                        icon.setBounds(0, 0, 64, 64); // 32dp in pixels approximately
-                        menuItem.setIcon(icon);
-                    }
-
-                    popup.setOnMenuItemClickListener(menuItem -> {
-                        int position = menuItem.getItemId() - idOffset;
-                        String oldSelectedPackage = selectedPackage;
-                        selectedPackage = appPacks.get(position).getPackageName();
-                        if (!oldSelectedPackage.equals(selectedPackage))
-                            getNotificationsAndRefreshUI();
-                        return true;
-                    });
-                    popup.show();
-                });
-            });
-            return true;
-
-        } else if (itemId == R.id.menu_delete) {
+        if (itemId == R.id.menu_delete) {
             new AlertDialog.Builder(this)
                     .setMessage(R.string.menu_delete_all_confirmation)
                     .setPositiveButton(android.R.string.yes, (dialog, id) -> {
@@ -352,20 +279,19 @@ public class MainActivity extends AppCompatActivity {
     public void getNotificationsAndRefreshUI() {
         executor.submit(() -> {
             int limit = 50;
-            String packageFilter = "all".equals(selectedPackage) ? "%" : selectedPackage;
             ArrayList<Object> items = new ArrayList<>(2 * limit);
 
             List<String> hiddenApps = getHiddenApps();
 
             // pinned
-            List<StoredNotification> pinned = notificationDao.getByPackageAndPinned(packageFilter, hiddenApps, 1, limit);
+            List<StoredNotification> pinned = notificationDao.getByPinned(hiddenApps, 1, limit);
             if (!pinned.isEmpty()) {
                 items.add(getString(R.string.pinned));
                 items.addAll(pinned);
             }
 
             // unpinned
-            List<StoredNotification> unpinned = notificationDao.getByPackageAndPinned(packageFilter, hiddenApps, 0, limit);
+            List<StoredNotification> unpinned = notificationDao.getByPinned(hiddenApps, 0, limit);
             if (!unpinned.isEmpty()) {
                 Date previousDate = null;
                 for (StoredNotification notification : unpinned) {

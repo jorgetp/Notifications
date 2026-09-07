@@ -1,13 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
-    <group android:id="@+id/group_filters">
-        <item
-            android:id="@+id/menu_filter"
-            android:icon="@drawable/outline_filter_list_24"
-            android:title="@string/all"
-            app:showAsAction="always" />
-    </group>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
     <group android:id="@+id/group_delete">
         <item
             android:id="@+id/menu_delete"
