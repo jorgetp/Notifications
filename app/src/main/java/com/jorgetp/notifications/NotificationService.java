@@ -31,13 +31,6 @@ import java.util.Calendar;
 import java.util.concurrent.Executors;
 
 public class NotificationService extends NotificationListenerService {
-    private static final String[] FINANCIAL_APPS = {
-            "com.bbva.bbvacontigo",
-            "ch.viseca.visecaone",
-            "com.revolut.revolut",
-            "com.transferwise.android",
-            "ch.zkb.twint"
-    };
     private NotificationManager manager;
 
     @Override
@@ -129,8 +122,6 @@ public class NotificationService extends NotificationListenerService {
 
             // Set pinned
             String importantSenderKey = sbn.getPackageName() + "/" + title;
-            //sn.pinned = importantSenders.contains(importantSenderKey) || isImportantFinancialNotification(sbn);
-            sn.pinned = isImportantFinancialNotification(sbn);
 
             // Insert or update - duplicates will be automatically handled by database
             notificationDao.insertOrUpdate(sn);
@@ -190,16 +181,6 @@ public class NotificationService extends NotificationListenerService {
         return false;
     }
 
-    private boolean isFinancialNotification(StatusBarNotification sbn) {
-        String packageName = sbn.getPackageName();
-        for (String financialApp : FINANCIAL_APPS) {
-            if (packageName.equals(financialApp)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private boolean containsCurrency(StatusBarNotification sbn) {
         Bundle extras = sbn.getNotification().extras;
         if (extras != null) {
@@ -216,10 +197,6 @@ public class NotificationService extends NotificationListenerService {
             }
         }
         return false;
-    }
-
-    private boolean isImportantFinancialNotification(StatusBarNotification sbn) {
-        return isFinancialNotification(sbn) && containsCurrency(sbn);
     }
 
     // true if weekend or weekdays 08:00-17:30

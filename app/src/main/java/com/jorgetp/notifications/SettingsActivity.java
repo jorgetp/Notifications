@@ -11,9 +11,11 @@ import android.text.TextUtils;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,6 +24,7 @@ import com.jorgetp.notifications.adapter.SettingsAdapter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 
 public class SettingsActivity extends AppCompatActivity {
@@ -41,10 +44,15 @@ public class SettingsActivity extends AppCompatActivity {
         RecyclerView rvItems = findViewById(R.id.rvItems);
         LinearLayoutManager lm = new LinearLayoutManager(this);
         rvItems.setLayoutManager(lm);
-        /*DividerItemDecoration divider =
+        DividerItemDecoration divider =
                 new DividerItemDecoration(this, lm.getOrientation());
-        rvItems.addItemDecoration(divider);*/
-
+        divider.setDrawable(
+                Objects.requireNonNull(ContextCompat.getDrawable(
+                        this,
+                        R.drawable.item_divider
+                ))
+        );
+        rvItems.addItemDecoration(divider);
         rvItems.setAdapter(adapter = new SettingsAdapter(this));
         getItemsAndRefreshUI();
     }
