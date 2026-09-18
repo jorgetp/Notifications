@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/item_background"
+    android:background="@color/colorSurface"
     android:minHeight="58dp"
     android:paddingHorizontal="10dp"
     android:paddingVertical="8dp">
@@ -49,6 +49,7 @@
                 android:ellipsize="end"
                 android:maxLines="1"
                 android:text="Sender"
+                android:textColor="@color/colorOnBackground"
                 android:textStyle="bold" />
 
             <TextView
@@ -59,7 +60,8 @@
                 android:alpha="0.85"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="1:30 PM" />
+                android:text="1:30 PM"
+                android:textColor="@color/colorOnBackground" />
         </LinearLayout>
 
         <TextView
@@ -68,7 +70,8 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="3"
-            android:text="Hello, how are you doing today?" />
+            android:text="Hello, how are you doing today?"
+            android:textColor="?attr/colorOnBackground" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

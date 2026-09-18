@@ -1,7 +1,6 @@
 <resources>
     <!-- Base application theme. -->
-    <style name="Theme.Notifications" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
+    <style name="Theme.Notifications" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
-        <item name="android:windowBackground">?attr/colorSurfaceContainer</item>
     </style>
 </resources>
