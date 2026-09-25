@@ -3,8 +3,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/colorSurface"
+    android:layout_marginHorizontal="4dp"
+    android:layout_marginBottom="2dp"
+    android:background="@drawable/rounded"
     android:minHeight="58dp"
+    android:paddingVertical="8dp"
     android:paddingStart="10dp"
     android:paddingEnd="8dp">
 
@@ -32,8 +35,7 @@
             android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="This is a switch"
-            android:textColor="@color/colorOnBackground" />
+            android:text="This is a switch" />
 
         <androidx.appcompat.widget.SwitchCompat
             android:id="@+id/switch1"

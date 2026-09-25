@@ -22,12 +22,10 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.view.menu.MenuBuilder;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.MenuCompat;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -48,7 +46,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -168,15 +165,6 @@ public class MainActivity extends AppCompatActivity {
         RecyclerView rvNotifications = findViewById(R.id.rvNotifications);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this);
         rvNotifications.setLayoutManager(layoutManager);
-        DividerItemDecoration divider =
-                new DividerItemDecoration(this, layoutManager.getOrientation());
-        divider.setDrawable(
-                Objects.requireNonNull(ContextCompat.getDrawable(
-                        this,
-                        R.drawable.item_divider
-                ))
-        );
-        rvNotifications.addItemDecoration(divider);
         rvNotifications.setAdapter(adapter = new NotificationsAdapter(this));
 
         notificationDao = DbProvider.get(getApplicationContext()).notificationDao();
