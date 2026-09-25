@@ -184,28 +184,6 @@ public class MainActivity extends AppCompatActivity {
             if (last != null)
                 getNotificationsAndRefreshUI();
         });
-
-        /*// simulate adding notifications for testing
-        executor.execute(() -> {
-            String[] apps = {
-                "com.example.bank1"
-                "com.example.bank2"
-                "com.example.bank3"
-                "com.example.payments"
-                "com.whatsapp", // WhatsApp
-                "org.thoughtcrime.securesms", // Signal Messaging
-                "com.microsoft.teams", // Teams
-                "com.google.android.gm", // Gmail
-                "com.linkedin.android", // LinkedIn
-                "com.microsoft.office.outlook" // Outlook
-            };
-            for (int i = 0; i < apps.length; i++) {
-                notificationDao.insertOrUpdate(
-                    new StoredNotification(UUID.randomUUID().toString(), 
-                    System.currentTimeMillis() - i * 60000, apps[i], "Title " + i, "Text from " + apps[i], "category"));
-            }
-        });*/
-
     }
 
     @Override
